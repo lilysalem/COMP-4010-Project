@@ -2,91 +2,25 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 import pygame
-from typing import Optional, Tuple, Dict, Any, List
+from typing import Optional
+import src.globals as GLOBALS
+from src.hex_grid_helpers import HexPos, HexCell, HexMap
 
 
 class HexGridWorld(gym.Env):
-    """
-    A hexagonal grid world environment built with OpenAI Gymnasium.
-    
-    This environment represents a 2D hexagonal grid where an agent can navigate
-    by moving to adjacent hexagonal cells. The grid uses axial coordinates (q, r)
-    for representing hexagonal cells.
-    
-    Axial coordinates for hexagonal grid:
-    - q: corresponds roughly to columns (moving east/west)
-    - r: corresponds roughly to rows (moving northeast/southwest)
-    
-    Movement directions (6 possible actions):
-    0: East (+1, 0)
-    1: Northeast (0, -1)
-    2: Northwest (-1, -1)
-    3: West (-1, 0)
-    4: Southwest (0, +1)
-    5: Southeast (+1, +1)
-    """
-    
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
-    
-    # Direction vectors for axial coordinates (q, r)
-    DIRECTIONS = [
-        (1, 0),    # East
-        (0, -1),   # Northeast
-        (-1, -1),  # Northwest
-        (-1, 0),   # West
-        (0, 1),    # Southwest
-        (1, 1),    # Southeast
-    ]
     
     def __init__(
         self,
-        grid_size: int = 5,
+        grid_radius: int = 10,
         render_mode: Optional[str] = None,
         max_steps: int = 100,
         world_seed: Optional[int] = None
     ):
-        """
-        Initialize the hexagonal grid world.
-        
-        Args:
-            grid_size: The radius of the hexagonal grid (distance from center to edge)
-            render_mode: The render mode to use (human or rgb_array)
-            max_steps: Maximum number of steps before episode termination
-        """
-        self.grid_size = grid_size
-        self.max_steps = max_steps
-        self.step_count = 0
-        
-        # Define grid boundaries
-        self.min_q = -grid_size
-        self.max_q = grid_size
-        self.min_r = -grid_size
-        self.max_r = grid_size
-        
-        # Define observation space: (q, r) position
-        self.observation_space = spaces.Box(
-            low=np.array([self.min_q, self.min_r]),
-            high=np.array([self.max_q, self.max_r]),
-            dtype=np.int32
-        )
-        
-        # Define action space: 6 directions
-        self.action_space = spaces.Discrete(6)
-        
-        # Initialize position, target, and obstacles
-        self.agent_pos = None  # (q, r)
-        self.target_pos = None  # (q, r)
-        self.obstacles = []  # List of (q, r) positions that are obstacles
-        
-        # Rendering setup
-        self.render_mode = render_mode
-        self.window = None
-        self.clock = None
-        self.hex_size = 30  # Size of hexagon (distance from center to corner)
-        self.window_size = (
-            (self.grid_size * 2 + 2) * self.hex_size * 2,
-            (self.grid_size * 2 + 2) * self.hex_size * 2
-        )
+        self.max_q = grid_radius
+        self.max_r = grid_radius
+        self.max_s = grid_radius
+        self.hex_map = HexMap(grid_radius, grid_radius, grid_radius, seed=str(world_seed))
         
     def _is_valid_pos(self, pos):
         """Check if a position is within grid boundaries and not an obstacle."""
