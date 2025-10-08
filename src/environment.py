@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -6,164 +7,92 @@ from typing import Optional
 import src.globals as GLOBALS
 from src.hex_grid_helpers import HexPos, HexCell, HexMap
 
-
+@dataclass
 class HexGridWorld(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
-    
-    def __init__(
-        self,
-        grid_radius: int = 10,
-        render_mode: Optional[str] = None,
-        max_steps: int = 100,
-        world_seed: Optional[int] = None
-    ):
-        self.max_q = grid_radius
-        self.max_r = grid_radius
-        self.max_s = grid_radius
-        self.hex_map = HexMap(grid_radius, grid_radius, grid_radius, seed=str(world_seed))
-        
-    def _is_valid_pos(self, pos):
-        """Check if a position is within grid boundaries and not an obstacle."""
-        q, r = pos
-        # Check grid boundaries
-        if q < self.min_q or q > self.max_q or r < self.min_r or r > self.max_r:
-            return False
-        # Check if position is an obstacle
-        if pos in self.obstacles:
-            return False
-        # Check if the position satisfies the third coordinate constraint for hexagonal grid
-        # In axial coordinates, we implicitly have s = -q-r, and need to check if |s| <= grid_size
-        s = -q - r
-        if abs(s) > self.grid_size:
-            return False
-        return True
+
+    step_count: int
+    max_steps: int
+    max_q: int
+    max_r: int
+    max_s: int
+    hex_map: HexMap
+    world_seed: Optional[str] = None
+
+    def __post_init__(self):
+        self.hex_map = HexMap(self.max_q, self.max_r, self.max_s, seed=str(self.world_seed))
+
+    def _is_valid_pos(self, pos: HexPos):
+        return self.hex_map.is_pos_valid(pos)
         
     def _get_random_valid_pos(self):
-        """Get a random valid position on the grid."""
         while True:
             q = np.random.randint(self.min_q, self.max_q + 1)
             r = np.random.randint(self.min_r, self.max_r + 1)
-            pos = (q, r)
+            s = -q - r
+            pos = HexPos(q, r, s)
             if self._is_valid_pos(pos):
                 return pos
-    
-    def _generate_obstacles(self, num_obstacles=None):
-        """Generate random obstacles on the grid."""
-        if num_obstacles is None:
-            # Default: add obstacles for about 20% of the grid
-            total_cells = (2 * self.grid_size + 1) ** 2
-            num_obstacles = int(0.2 * total_cells)
-        
-        self.obstacles = []
-        for _ in range(num_obstacles):
-            # Make sure obstacle is not at agent or target position
-            while True:
-                pos = self._get_random_valid_pos()
-                if pos != self.agent_pos and pos != self.target_pos and pos not in self.obstacles:
-                    self.obstacles.append(pos)
-                    break
                     
     def _calculate_reward(self):
-        """Calculate reward based on current state."""
-        # Reward for reaching target
         if self.agent_pos == self.target_pos:
-            return 10.0
+            return 1.0
             
-        # Small penalty for each step to encourage shortest path
-        return -0.1
+        return -0.01
         
     def reset(self, seed=None, options=None):
-        """
-        Reset the environment to an initial state.
-        
-        Args:
-            seed: Seed for random number generator
-            options: Additional options (not used currently)
-            
-        Returns:
-            observation: The initial observation
-            info: Additional information
-        """
-        # Initialize RNG
         super().reset(seed=seed)
         
-        # Reset step counter
         self.step_count = 0
         
         # Set agent position at center
-        self.agent_pos = (0, 0)
-        
-        # Set random target position (not the same as agent)
+        self.agent_pos = HexPos(0, 0, 0)
+
         while True:
             self.target_pos = self._get_random_valid_pos()
             if self.target_pos != self.agent_pos:
                 break
         
-        # Generate obstacles
-        self._generate_obstacles()
-        
-        # Initialize renderer
         if self.render_mode == "human":
             self._render_frame()
             
         return self._get_obs(), self._get_info()
     
     def step(self, action):
-        """
-        Take a step in the environment.
-        
-        Args:
-            action: An action to take (0-5)
-            
-        Returns:
-            observation: The new observation
-            reward: The reward for taking the action
-            terminated: Whether the episode is terminated
-            truncated: Whether the episode is truncated (e.g., due to max steps)
-            info: Additional information
-        """
-        # Increment step counter
         self.step_count += 1
         
-        # Get the direction vector
-        direction = self.DIRECTIONS[action]
+        direction = GLOBALS.DIRECTIONS[action]
         
-        # Calculate new position
-        new_q = self.agent_pos[0] + direction[0]
-        new_r = self.agent_pos[1] + direction[1]
-        new_pos = (new_q, new_r)
-        
-        # Move agent if valid position
+        new_pos = HexPos(self.agent_pos.q + direction.q, 
+                        self.agent_pos.r + direction.s, 
+                        self.agent_pos.s + direction.s)
+
         if self._is_valid_pos(new_pos):
             self.agent_pos = new_pos
-            
-        # Calculate reward
+
         reward = self._calculate_reward()
-        
-        # Check if terminated
+
         terminated = self.agent_pos == self.target_pos
         
-        # Check if truncated due to max steps
         truncated = self.step_count >= self.max_steps
         
-        # Update rendering
         if self.render_mode == "human":
             self._render_frame()
             
         return self._get_obs(), reward, terminated, truncated, self._get_info()
     
     def _get_obs(self):
-        """Get current observation."""
-        return np.array([self.agent_pos[0], self.agent_pos[1]], dtype=np.int32)
+        return np.array(self.agent_pos, dtype=np.int32)
     
     def _get_info(self):
         """Get additional information."""
-        # Calculate Manhattan distance to target in hex grid
-        q_dist = abs(self.agent_pos[0] - self.target_pos[0])
-        r_dist = abs(self.agent_pos[1] - self.target_pos[1])
-        s_dist = abs(-self.agent_pos[0] - self.agent_pos[1] - (-self.target_pos[0] - self.target_pos[1]))
-        # Hexagonal distance is max of the three coordinates
-        hex_distance = max(q_dist, r_dist, s_dist)
+        agent = self.agent_pos
+        target = self.target_pos
+        q_dist = abs(agent.q - target.q)
+        r_dist = abs(agent.r - target.r)
+        s_dist = abs(agent.s - target.s)
+
+        hex_distance = (q_dist + r_dist + s_dist) // 2
         
         return {
             "distance_to_target": hex_distance,

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from src.resource import Resource
+import numpy as np
+from map_resource import MapResource
 import src.globals as GLOBALS
 
 
@@ -15,15 +16,21 @@ class HexPos:
 
     def __eq__(self, other):
         if not isinstance(other, HexPos):
-            return NotImplemented
+            raise TypeError(f"Cannot compare HexPos with {type(other)}")
         return (self.q, self.r, self.s) == (other.q, other.r, other.s)
+    
+    def distance(self, other):
+        return ((abs(self.q - other.q) + abs(self.r - other.r) + abs(self.s - other.s)) // 2)
 
 @dataclass
 class HexCell:
     pos: HexPos
     terrain: GLOBALS.TERRAIN_TYPES.grass
     cost: int = 1
-    
+
+    def distance(self, pos: HexPos):
+        return self.pos.distance(pos)
+
     def blocked(self):
         return self.terrain == GLOBALS.TERRAIN_TYPES.void or self.terrain == GLOBALS.TERRAIN_TYPES.wall
 
@@ -33,10 +40,13 @@ class HexMap:
     r_limit: int
     s_limit: int
     seed: str = ""
-    resources: list[Resource] = []
+    spawn_point: HexPos = HexPos(0, 0, 0)
+    target_point: HexPos
+    resources: list[MapResource] = []
     cells: dict[HexPos, HexCell] = {}
 
     def __post_init__(self):
+        np.random.seed(self.seed)
         # check validity for provided manual resources
         for resource in self.resources:
             pos = resource.pos
@@ -48,6 +58,9 @@ class HexMap:
             if cell.terrain == GLOBALS.TERRAIN_TYPES.void:
                 raise ValueError(f"Resource {resource.name} at {pos} is placed on void terrain.")
         # fill in resource and terrain generation here
+        self.target_point = HexPos(np.random.randint(-self.q_limit, self.q_limit + 1),
+                                   np.random.randint(-self.r_limit, self.r_limit + 1),
+                                   np.random.randint(-self.s_limit, self.s_limit + 1))
         print("post init")
     
     def is_pos_valid(self, hex_pos: HexPos):
