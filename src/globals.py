@@ -1,5 +1,7 @@
 from enum import Enum
-from src.hex_grid_helpers import HexPos
+from src.hex_pos import HexPos
+from dataclasses import dataclass
+
 
 class TERRAIN_TYPES(Enum):
     grass = 1

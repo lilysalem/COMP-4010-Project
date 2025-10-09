@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from src.hex_grid_helpers import HexPos
+from src.data_structures import HexPos
 
 @dataclass
 class MapResource:

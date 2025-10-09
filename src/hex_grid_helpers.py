@@ -1,31 +1,13 @@
-from dataclasses import dataclass
 import numpy as np
-from map_resource import MapResource
 import src.globals as GLOBALS
+from dataclasses import dataclass
+from src.hex_pos import HexPos
 
-
-@dataclass(frozen=True, order=True)
-class HexPos:
-    q: int  # Column
-    r: int  # Row
-    s: int  # fuck off copilot stop adding comments if you don't know what's goin on
-
-    def __post_init__(self):
-        if self.q + self.r + self.s != 0:
-            raise ValueError(f"Invalid cube coord {self} (q+r+s must be 0).")
-
-    def __eq__(self, other):
-        if not isinstance(other, HexPos):
-            raise TypeError(f"Cannot compare HexPos with {type(other)}")
-        return (self.q, self.r, self.s) == (other.q, other.r, other.s)
-    
-    def distance(self, other):
-        return ((abs(self.q - other.q) + abs(self.r - other.r) + abs(self.s - other.s)) // 2)
 
 @dataclass
 class HexCell:
     pos: HexPos
-    terrain: GLOBALS.TERRAIN_TYPES.grass
+    terrain: GLOBALS.TERRAIN_TYPES = GLOBALS.TERRAIN_TYPES.grass  # Using default value instead of imported constant
     cost: int = 1
 
     def distance(self, pos: HexPos):
@@ -34,6 +16,14 @@ class HexCell:
     def blocked(self):
         return self.terrain == GLOBALS.TERRAIN_TYPES.void or self.terrain == GLOBALS.TERRAIN_TYPES.wall
 
+
+@dataclass
+class MapResource:
+    name: str
+    pos: HexPos
+    type: str
+
+
 @dataclass
 class HexMap:
     q_limit: int
@@ -41,12 +31,30 @@ class HexMap:
     s_limit: int
     seed: str = ""
     spawn_point: HexPos = HexPos(0, 0, 0)
-    target_point: HexPos
-    resources: list[MapResource] = []
-    cells: dict[HexPos, HexCell] = {}
+    target_point = None  # Will be defined in __post_init__
+    resources: list[MapResource] = None
+    cells: dict[HexPos, HexCell] = None
 
     def __post_init__(self):
-        np.random.seed(self.seed)
+        if self.resources is None:
+            self.resources = []
+        if self.cells is None:
+            self.cells = {}
+        
+        for q in range(-self.q_limit, self.q_limit + 1):
+            for r in range(-self.r_limit, self.r_limit + 1):
+                s = -q - r
+                if abs(s) <= self.s_limit:
+                    pos = HexPos(q, r, s)
+                    # Randomly assign terrain types based on some probabilities
+                    
+                    self.cells[pos] = HexCell(pos=pos, terrain=GLOBALS.TERRAIN_TYPES.grass)
+        
+        # Convert string seed to integer hash for numpy
+        if self.seed:
+            np.random.seed(abs(hash(self.seed)) % (2**32))
+        else:
+            np.random.seed(None)  # Use system time if no seed provided
         # check validity for provided manual resources
         for resource in self.resources:
             pos = resource.pos
@@ -55,12 +63,13 @@ class HexMap:
                 abs(pos.s) > self.s_limit):
                 raise ValueError(f"Resource {resource.name} at {pos} is out of map bounds.")
             cell = self.cells.get(pos)
-            if cell.terrain == GLOBALS.TERRAIN_TYPES.void:
+            if cell and cell.terrain == GLOBALS.TERRAIN_TYPES.void:
                 raise ValueError(f"Resource {resource.name} at {pos} is placed on void terrain.")
-        # fill in resource and terrain generation here
-        self.target_point = HexPos(np.random.randint(-self.q_limit, self.q_limit + 1),
-                                   np.random.randint(-self.r_limit, self.r_limit + 1),
-                                   np.random.randint(-self.s_limit, self.s_limit + 1))
+
+        q = np.random.randint(-self.q_limit, self.q_limit + 1)
+        r = np.random.randint(-self.r_limit, self.r_limit + 1)
+        s = -q - r  # Ensure q + r + s = 0
+        self.target_point = HexPos(q, r, s)
         print("post init")
     
     def is_pos_valid(self, hex_pos: HexPos):

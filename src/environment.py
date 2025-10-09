@@ -5,33 +5,49 @@ import numpy as np
 import pygame
 from typing import Optional
 import src.globals as GLOBALS
-from src.hex_grid_helpers import HexPos, HexCell, HexMap
+from src.hex_pos import HexPos
+from src.hex_grid_helpers import HexCell, HexMap
 
 @dataclass
 class HexGridWorld(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    step_count: int
-    max_steps: int
     max_q: int
     max_r: int
     max_s: int
-    hex_map: HexMap
+    max_steps: int
     world_seed: Optional[str] = None
+    step_count: int = 0
+    agent_pos: HexPos = None  # Will be initialized in reset
+    target_pos: HexPos = None  # Will be initialized in reset
+    render_mode: Optional[str] = None
+    window: Optional[pygame.Surface] = None
+    clock: Optional[pygame.time.Clock] = None
+    hex_map: HexMap = None  # Will be initialized in post_init
+    window_size: tuple = (800, 600)
+    hex_size: int = 0  # Will be calculated in post_init
 
     def __post_init__(self):
+        # Initialize the hex map
         self.hex_map = HexMap(self.max_q, self.max_r, self.max_s, seed=str(self.world_seed))
         self.window_size = (800, 600)
         self.hex_size = 600 // (2 * max(self.max_q, self.max_r, self.max_s) + 1)
+        
+        # Initialize agent and target positions (will be set in reset)
+        if self.agent_pos is None:
+            self.agent_pos = HexPos(0, 0, 0)
+        if self.target_pos is None:
+            self.target_pos = HexPos(0, 0, 0)
 
     def _is_valid_pos(self, pos: HexPos):
         return self.hex_map.is_pos_valid(pos)
         
     def _get_random_valid_pos(self):
         while True:
-            q = np.random.randint(self.min_q, self.max_q + 1)
-            r = np.random.randint(self.min_r, self.max_r + 1)
-            s = -q - r
+            # Use negative to positive range for all coordinates
+            q = np.random.randint(-self.max_q, self.max_q + 1)
+            r = np.random.randint(-self.max_r, self.max_r + 1)
+            s = -q - r  # Ensure q + r + s = 0
             pos = HexPos(q, r, s)
             if self._is_valid_pos(pos):
                 return pos
@@ -66,7 +82,7 @@ class HexGridWorld(gym.Env):
         direction = GLOBALS.DIRECTIONS[action]
         
         new_pos = HexPos(self.agent_pos.q + direction.q, 
-                        self.agent_pos.r + direction.s, 
+                        self.agent_pos.r + direction.r, 
                         self.agent_pos.s + direction.s)
 
         if self._is_valid_pos(new_pos):
@@ -125,7 +141,11 @@ class HexGridWorld(gym.Env):
     # draws hex cell at given pixel coordinates
     def _draw_hex_cell(self, cell: HexCell):
         cellPoints = self._hex_to_coord_set(cell.pos)
-        color = GLOBALS.COLORS[cell.terrain] if GLOBALS.COLORS[cell.terrain] else (200, 200, 200)
+        color = GLOBALS.COLORS.get(cell.terrain, (200, 200, 200))  # Use get to avoid KeyError
+        if cell.pos == self.agent_pos:
+            color = (255, 0, 0)  # Red for agent
+        elif cell.pos == self.target_pos:
+            color = (255, 240, 31)  # Neon yellow for target
         pygame.draw.polygon(self.window, color, cellPoints)
     
     def render(self):
