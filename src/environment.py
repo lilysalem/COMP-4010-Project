@@ -21,6 +21,8 @@ class HexGridWorld(gym.Env):
 
     def __post_init__(self):
         self.hex_map = HexMap(self.max_q, self.max_r, self.max_s, seed=str(self.world_seed))
+        self.window_size = (800, 600)
+        self.hex_size = 600 // (2 * max(self.max_q, self.max_r, self.max_s) + 1)
 
     def _is_valid_pos(self, pos: HexPos):
         return self.hex_map.is_pos_valid(pos)
@@ -85,7 +87,6 @@ class HexGridWorld(gym.Env):
         return np.array(self.agent_pos, dtype=np.int32)
     
     def _get_info(self):
-        """Get additional information."""
         agent = self.agent_pos
         target = self.target_pos
         q_dist = abs(agent.q - target.q)
@@ -99,36 +100,33 @@ class HexGridWorld(gym.Env):
             "steps_taken": self.step_count
         }
     
-    def _hex_to_pixel(self, q, r):
-        """Convert hexagonal coordinates to pixel coordinates for rendering."""
-        # Constants for rendering
-        size = self.hex_size
-        width = size * 2
-        height = np.sqrt(3) * size
-        
-        # Calculate pixel coordinates
-        x = width * (q + r/2)
-        y = height * r
-        
-        # Center the grid on the screen
-        x += self.window_size[0] / 2
-        y += self.window_size[1] / 2
-        
-        return int(x), int(y)
-    
-    def _draw_hexagon(self, surface, color, center_x, center_y):
-        """Draw a hexagon on the surface."""
-        size = self.hex_size
+    # returns a 6-tuple of pixel coordinates for the vertices of the hexagon
+    def _hex_to_coord_set(self, coord: HexPos):
+        width = self.window_size[0]
+        height = self.window_size[1]
+
+        q, r, s = coord.q, coord.r, coord.s
+        assert q + r + s == 0, "q + r + s must be 0"
+
+        x, y = q, r
+
+        center_x = self.hex_size * np.sqrt(3) * (x + y / 2) + width // 2
+        center_y = self.hex_size * 3/2 * y + height // 2
+
         points = []
-        
         for i in range(6):
-            angle = np.pi / 3 * i
-            x = center_x + size * np.cos(angle)
-            y = center_y + size * np.sin(angle)
-            points.append((int(x), int(y)))
-            
-        pygame.draw.polygon(surface, color, points)
-        pygame.draw.polygon(surface, (0, 0, 0), points, 2)  # Black outline
+            angle = np.pi / 3 * i + np.pi / 6  # 30 degrees offset for pointy top
+            px = center_x + self.hex_size * np.cos(angle)
+            py = center_y + self.hex_size * np.sin(angle)
+            points.append((int(px), int(py)))
+        
+        return points
+    
+    # draws hex cell at given pixel coordinates
+    def _draw_hex_cell(self, cell: HexCell):
+        cellPoints = self._hex_to_coord_set(cell.pos)
+        color = GLOBALS.COLORS[cell.terrain] if GLOBALS.COLORS[cell.terrain] else (200, 200, 200)
+        pygame.draw.polygon(self.window, color, cellPoints)
     
     def render(self):
         """Render the environment."""
@@ -150,24 +148,8 @@ class HexGridWorld(gym.Env):
         canvas = pygame.Surface(self.window_size)
         canvas.fill((255, 255, 255))  # White background
         
-        # Draw all valid hexagons
-        for q in range(self.min_q, self.max_q + 1):
-            for r in range(self.min_r, self.max_r + 1):
-                pos = (q, r)
-                if self._is_valid_pos(pos):
-                    pixel_x, pixel_y = self._hex_to_pixel(q, r)
-                    
-                    # Different colors for different cell types
-                    color = (200, 200, 200)  # Default gray
-                    
-                    if pos in self.obstacles:
-                        color = (100, 100, 100)  # Darker gray for obstacles
-                    if pos == self.target_pos:
-                        color = (0, 255, 0)     # Green for target
-                    if pos == self.agent_pos:
-                        color = (255, 0, 0)     # Red for agent
-                        
-                    self._draw_hexagon(canvas, color, pixel_x, pixel_y)
+        for cell in self.hex_map.cells.values():
+            self._draw_hex_cell(cell)
         
         if self.render_mode == "human":
             self.window.blit(canvas, (0, 0))

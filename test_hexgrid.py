@@ -15,53 +15,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.'))
 
 from src.environment import HexGridWorld
 
-def test_random_agent():
-    """Test a random agent in the hexagonal grid world."""
-    # Create the environment
-    env = HexGridWorld(grid_size=5, render_mode="human")
-    
-    # Set seeds for reproducibility
-    env.action_space.seed(42)
-    observation, info = env.reset(seed=42)
-    
-    print("Starting test with random agent...")
-    print("Observation space:", env.observation_space)
-    print("Action space:", env.action_space)
-    print("Initial observation:", observation)
-    
-    total_reward = 0
-    num_steps = 0
-    max_steps = 100
-    
-    for _ in range(max_steps):
-        # Take random action
-        action = env.action_space.sample()
-        
-        # Step the environment
-        observation, reward, terminated, truncated, info = env.step(action)
-        
-        total_reward += reward
-        num_steps += 1
-        
-        # Print step information
-        print(f"Step {num_steps}: Action={action}, Pos={observation}, Reward={reward}, Info={info}")
-        
-        # Add a small delay for visualization
-        time.sleep(0.5)
-        
-        # Check if episode is done
-        if terminated or truncated:
-            break
-    
-    # Close the environment
-    env.close()
-    
-    print(f"Episode ended after {num_steps} steps with total reward: {total_reward}")
-    if terminated:
-        print("Agent reached the target!")
-    elif truncated:
-        print("Episode truncated due to maximum steps.")
-
 def test_manual_agent():
     """Test manual control in the hexagonal grid world."""
     import pygame
