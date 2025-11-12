@@ -122,10 +122,10 @@ class HexGrid(object):
     # Initialize Pygame window, called if simulation is animated - doesn't affect internals
     def createWindow(self, windowSize):
         # Setup
-        self.windowSize = windowSize
         pygame.init()
         pygame.display.init()
         self.window = pygame.display.set_mode(windowSize)
+        self.windowSize = windowSize
         
         # Calculate how big to make each cell so it fits the window right
         # I hate math
@@ -142,6 +142,17 @@ class HexGrid(object):
         originX = (windowSize[0] / 2) + (originXOffsetInCellRads * self.cellRad)
         originY = (windowSize[1] / 2) + (originYOffsetInCellRads * self.cellRad)
         self.origin = (originX,originY)
+    
+    # Receive existing Pygame window
+    def loadWindow(self, windowData):
+        self.window = windowData[0]
+        self.windowSize = windowData[1]
+        self.cellRad = windowData[2]
+        self.origin = windowData[3]
+
+    # Window data
+    def passWindowData(self):
+        return (self.window, self.windowSize, self.cellRad, self.origin)
     
     # Close window, currently unused - gotta fix this
     def closeWindow(self):
