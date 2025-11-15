@@ -6,7 +6,7 @@ Parent ant class plus queen and worker.
 """
 
 # Imports
-import random
+from random import randint
 from hex_grid import HexGrid
 
 
@@ -45,13 +45,13 @@ class Ant(object):
 
 # Queen
 class Queen(Ant):
-    food: int = 1 # Food received, lets it spawn a worker - 1 to start
+    food: int = 0 # Food received, lets it spawn a worker - 1 to start
     colony: list = None # Access to world manager's list of its colony - first thing in it is always itself
 
     # Action
     def act(self):
         if self.food > 0: # Attempt to spend a food to spawn a worker in a random adjacent cell if it's empty
-            spawn = random.randint(0, 5)
+            spawn = randint(0, 5)
             cSpawn = self.visionOffsets[spawn]
             if self.grid.getCell(cSpawn) == "E":
                 self.dir = spawn
@@ -127,7 +127,7 @@ class Worker(Ant):
                 if vCells[i] == "F":
                     vCells[i] = "O"
             if vCells[0] == vCells[2]:
-                action = random.randint(0,1) * 2 + 1
+                action = randint(0,1) * 2 + 1
             elif vCells[0] == "O":
                 action = 3
             elif vCells[2] == "O":
@@ -138,9 +138,9 @@ class Worker(Ant):
                 if vCells[i] == "T" or vCells[i] == "S":
                     bestPathActions.append(i + 1)
             if len(bestPathActions) > 0:
-                action = bestPathActions[random.randint(0, len(bestPathActions) - 1)]
+                action = bestPathActions[randint(0, len(bestPathActions) - 1)]
             else:
-                action = random.randint(1, 3)
+                action = randint(1, 3)
         #"""
 
         # Take the action and get the reward
@@ -185,7 +185,7 @@ class Worker(Ant):
             for i in range(3):
                 if vCells[i] == "F":
                     foodCells.append(i)
-            cFood = vCoords[foodCells[random.randint(0, len(foodCells) - 1)]]
+            cFood = vCoords[foodCells[randint(0, len(foodCells) - 1)]]
             self.grid.setCell(cFood, "E")
             self.hasFood = True
             self.grid.addTrail(cFood)
