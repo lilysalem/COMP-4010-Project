@@ -16,3 +16,9 @@
 - Use ```$pip install -r ./requirements.txt``` while inside the repo folder to install requirements.
 - Current environment demo is done through running ```python3 ./src/hex_grid_world.py```
     - Testing will be migrated to ./testbed.py in the future
+
+If using conda:
+- run `conda create -n 4010P -c conda-forge python=3.11`
+- run `conda activate 4010P`
+- run `conda install --file requirements.txt`
+- run `python3 hex_grid_world.py`
