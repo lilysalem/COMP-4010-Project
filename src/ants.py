@@ -13,7 +13,6 @@ from hex_grid import HexGrid
 # Parent ant class
 class Ant(object):
     grid: HexGrid # The grid world it's in
-    colonyID: int # Unused for now, maybe later (but not likely)
     dir: int # direction, 0-5 inclusive, 0 = up, clockwise from there
     x: int # X position
     y: int # Y position
@@ -25,10 +24,9 @@ class Ant(object):
     visionOffsets = ((1,0,0), (1,1,0), (0,1,0), (0,1,1), (0,0,1), (1,0,1)) # Constant array
     
     # Initialize
-    def __init__(self, grid, colonyID = 0, dir = 0, x = 0, y = 0, z = 0):
+    def __init__(self, grid, dir = 0, x = 0, y = 0, z = 0):
         # Setup
         self.grid = grid
-        self.colonyID = colonyID
         self.dir = dir
         self.x = x
         self.y = y
@@ -67,10 +65,64 @@ class Worker(Ant):
     queen: Queen = None # Queen of its colony
 
     # Action
-    def act(self):
+    def act(self, action = None):
         # Increment age
         self.age += 1
 
+        # State
+        vision, visionCoords = self.observe()
+        state = (self.hasFood, vision[0], vision[1], vision[2])
+        # State to be analyzed is the three cells in vision plus hasFood, so: char, char, char, bool
+        # Will probably need to be converted to a different data type for math analysis
+        
+        # Toggle: random action or my preset algorithm mimicking good performance.
+        # This will have to be reworked once we get the actual reinforcement learning going.
+        if action == None:
+            """ # (Comment/uncomment this line to toggle)
+            action = random.randint(1, 5)
+            """
+            if "Q" in vision and self.hasFood:
+                action = 4
+            elif "F" in vision and not self.hasFood:
+                action = 3
+            elif self.hasFood and ("S" not in vision) and (vision[1] == "O"):
+                if vision[0] == vision[2]:
+                    action = randint(0,1) * 2
+                elif vision[0] == "O":
+                    action = 2
+                elif vision[2] == "O":
+                    action = 0
+            else:
+                bestPathActions = []
+                for i in range(3):
+                    if vision[i] == "T" or vision[i] == "S":
+                        bestPathActions.append(i)
+                if len(bestPathActions) > 0:
+                    action = bestPathActions[randint(0, len(bestPathActions) - 1)]
+                else:
+                    action = randint(0, 2)
+            #"""
+
+        # Take the action and get the reward
+        if action == 0:
+            reward = self.move(visionCoords[0], vision[0], -1)
+        if action == 1:
+            reward = self.move(visionCoords[1], vision[1], 0)
+        if action == 2:
+            reward = self.move(visionCoords[2], vision[2], 1)
+        if action == 3:
+            reward = self.pickUpFood(visionCoords, vision)
+        if action == 4:
+            reward = self.giveQueenFood(visionCoords)
+
+        # New state
+        visionNew, visionCoordsNew = self.observe()
+        stateNew = (self.hasFood, visionNew[0], visionNew[1], visionNew[2])
+
+        return state, action, reward, stateNew
+    
+    # Observe cells in vision range
+    def observe(self):
         # Get and process the cells in its vision range
         # It sees three adjacent cells, detemined by its direction
         # Two more cell types which could replace an E:
@@ -78,18 +130,25 @@ class Worker(Ant):
         # S shortest path (E cell with shorter distance to queen than current cell)
         # T is only used when foraging
         # S is only used when returning
-        # Because of this, T and S will never appear in the same vision set
-        # In both modes, convert all W worker into O obstacle (can't move into that space)
-        # In returning mode, also convert F food into O obstacle (can't pick up)
         # Result: three chars representing the post-process cells in its vision
         vOffsets = (self.visionOffsets[self.dir - 1], self.visionOffsets[self.dir], self.visionOffsets[self.dir - 5])
         cSelf = (self.x,self.y,self.z)
         vCoords = (self.grid.add(cSelf, vOffsets[0]), self.grid.add(cSelf, vOffsets[1]), self.grid.add(cSelf, vOffsets[2]))
         vCells = [self.grid.getCell(vCoords[0]), self.grid.getCell(vCoords[1]), self.grid.getCell(vCoords[2])]
         for i in range(3):
+            # Cut down the state space by eliminating redundant ones
+            # Treat cells occupied by other workers and cells outside the world bounds as obstacles
+            # If already has food, do the same for food objects because nothing happens on interaction with it in that mode
+            # If looking for food, do the same for the queen because nothing happens on interaction with it in that mode
+            # This isn't really necessary, it's just a shortcut, but it'll make training faster
             if vCells[i] == "W" or vCells[i] == "V":
                 vCells[i] = "O"
+            elif vCells[i] == "F" and self.hasFood:
+                vCells[i] = "O"
+            elif vCells[i] == "Q" and not self.hasFood:
+                vCells[i] = "O"
         if self.hasFood:
+            # Any E cell which would make the ant closer to the queen if moved into is converted to S
             cQueen = (self.queen.x, self.queen.y, self.queen.z)
             vDists = [self.grid.distance(vCoords[0], cQueen), self.grid.distance(vCoords[1], cQueen), self.grid.distance(vCoords[2], cQueen)]
             #minDist = min(vDists)
@@ -99,6 +158,7 @@ class Worker(Ant):
                 if vCells[i] == "E" and vDists[i] < dist:
                     vCells[i] = "S"
         else:
+            # The E cell with the highest trail value and other E cells with a value at least half that value are converted to T
             vTrails = [self.grid.getTrail(vCoords[0]), self.grid.getTrail(vCoords[1]), self.grid.getTrail(vCoords[2])]
             for i in range(3):
                 if vCells[i] != "E":
@@ -109,52 +169,7 @@ class Worker(Ant):
                 #if vTrails[i] > 0:
                 if vTrails[i] > 0 and vTrails[i] >= maxTrail / 2:
                     vCells[i] = "T"
-        # State to be analyzed is the three cells in vCells plus hasFood, so: char, char, char, bool
-        # Will probably need to be converted to a different data type for math analysis
-        
-        # Toggle: random action or my preset algorithm mimicking good performance.
-        # This will have to be reworked once we get the actual reinforcement learning going.
-        action = 0
-        """ # (Comment/uncomment this line to toggle)
-        action = random.randint(1, 5)
-        """
-        if "Q" in vCells and self.hasFood:
-            action = 5
-        elif "F" in vCells and not self.hasFood:
-            action = 4
-        elif self.hasFood and ("S" not in vCells) and (vCells[1] == "O" or vCells[1] == "F"):
-            for i in range(3):
-                if vCells[i] == "F":
-                    vCells[i] = "O"
-            if vCells[0] == vCells[2]:
-                action = randint(0,1) * 2 + 1
-            elif vCells[0] == "O":
-                action = 3
-            elif vCells[2] == "O":
-                action = 1
-        else:
-            bestPathActions = []
-            for i in range(3):
-                if vCells[i] == "T" or vCells[i] == "S":
-                    bestPathActions.append(i + 1)
-            if len(bestPathActions) > 0:
-                action = bestPathActions[randint(0, len(bestPathActions) - 1)]
-            else:
-                action = randint(1, 3)
-        #"""
-
-        # Take the action and get the reward
-        reward = 0
-        if action == 1:
-            reward = self.move(vCoords[0], vCells[0], -1)
-        if action == 2:
-            reward = self.move(vCoords[1], vCells[1], 0)
-        if action == 3:
-            reward = self.move(vCoords[2], vCells[2], 1)
-        if action == 4:
-            reward = self.pickUpFood(vCoords, vCells)
-        if action == 5:
-            reward = self.giveQueenFood(vCoords)
+        return vCells, vCoords
     
     # Move to a cell
     def move(self, cDest, cell, turn):

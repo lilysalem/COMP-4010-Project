@@ -11,6 +11,8 @@ Files this env version needs:
 -hex_grid_world.py (this one)
 -hex_grid.py
 -ants.py
+-worlds.py
+-animator.py
 
 New files to create:
 -Reinforcement learning file for state/action/reward calculations and storage
@@ -23,6 +25,7 @@ New files to create:
 import gymnasium as gym
 import hex_grid
 import ants
+import window_animator
 from random import randint
 from time import sleep # For the animation
 #import numpy as np # Unused while we don't have the reinforcement math, it'll go in that file
@@ -40,6 +43,7 @@ class HexGridWorld(gym.Env):
     gridMemory: list = None # Store random map for resets
     colony: list = [] # The ants
     animate: bool = False # Toggle Pygame rendering (unnecessary while training)
+    animator: window_animator.Animator = None # The Pygame display handler
     
     # Initialize
     def __init__(self, train, worldType, x = None, y = None, z = None, animate = False, windowSize = (1250, 750)):
@@ -55,9 +59,8 @@ class HexGridWorld(gym.Env):
         # Set up animation
         if animate:
             self.animate = True
-            self.grid.createWindow(windowSize)
-            self.grid.drawFullGrid()
-            self.grid.render()
+            self.animator = window_animator.Animator(self.xR, self.yR, self.zR, windowSize)
+            self.render()
             sleep(1)
         # Go!
         print(self.xR, " ", self.yR, " ", self.zR)
@@ -65,9 +68,6 @@ class HexGridWorld(gym.Env):
 
     # Reset
     def reset(self):
-        # Save animation window
-        if self.animate:
-            windowData = self.grid.passWindowData()
         # Wipe and regenerate world
         self.grid = None
         self.colony = []
@@ -76,10 +76,68 @@ class HexGridWorld(gym.Env):
         print("Reset")
         # Pass in animation window
         if self.animate:
-            self.grid.loadWindow(windowData)
-            self.grid.drawFullGrid()
-            self.grid.render()
+            self.render()
             sleep(1)
+    
+    # Run simulation step
+    def step(self, action):
+        s = None
+        a = None
+        r = None
+        s_ = None
+        info = None
+        if self.train:
+            # Only one worker is trained at a time (unless we figure out how to do multiple?)
+            s, a, r, s_ = self.colony[1].act(action = action)
+            # (Other training crap here)
+        else:
+            # All ants in the colony take an action each step
+            # Turn order is colony list order
+            actCycle = 0
+            while actCycle < len(self.colony):
+                self.colony[actCycle].act()
+                actCycle += 1
+            # Post-action stuff
+            # Reduce the strength of trails over time
+            self.grid.fadeAllTrails()
+        # Kill worker ants that have reached the ends of their lives
+        # Lifespan is 1000 steps, this is changeable
+        # Queen is immortal and unaffected (unless we change that!)
+        for ant in self.colony:
+            if ant.age >= 1000:
+                ant.die()
+                self.colony.remove(ant)
+                del ant
+        # Increment step
+        self.stepCount += 1
+        # Animate
+        if self.animate:
+            self.render()
+            sleep(0.01) # Animation speed, toggle/change this as desired
+        # End simulation if 1 food retrieved while training or if colony died off
+        terminated = False
+        truncated = False
+        if self.train and self.colony[0].food > 0:
+            terminated = True
+            print("Terminated")
+        elif len(self.colony) == 1:
+            truncated = True
+            print("Truncated")
+        return s_, r, terminated, truncated, info # Continue
+    
+    # Update animation
+    def render(self):
+        self.animator.drawFullGrid(self.grid)
+        for ant in self.colony: # Grid knows where the ants are but knows nothing about them so gotta do them separately
+            if ant == self.colony[0]: # Queen
+                self.animator.drawCell(self.grid, (ant.x,ant.y,ant.z), antDir = ant.dir)
+            else: # Workers
+                self.animator.drawCell(self.grid, (ant.x,ant.y,ant.z), antDir = ant.dir, antHasFood = ant.hasFood)
+        self.animator.updateWindow()
+
+    # Close - gotta add this
+    def close(self):
+        return
     
     # Generate the correct world type
     # To add more: build its function and add it to this list
@@ -220,64 +278,19 @@ class HexGridWorld(gym.Env):
                 if self.grid.isWithinGrid((x+ii,y,z+i)):
                     self.grid.setCell(self.grid.normalize((x+ii,y,z+i)), cellType)
 
-    # Run simulation step
-    def step(self):
-        #print(self.stepCount)
-        if self.train:
-            # Only one worker is trained at a time (unless we figure out how to do multiple?)
-            self.colony[1].act()
-            # (Other training crap here)
-        else:
-            # All ants in the colony take an action each step
-            # Turn order is colony list order
-            actCycle = 0
-            while actCycle < len(self.colony):
-                self.colony[actCycle].act()
-                actCycle += 1
-            # Post-action stuff
-            # Reduce the strength of trails over time
-            self.grid.fadeAllTrails()
-            # Kill worker ants that have reached the ends of their lives
-            # Lifespan is 1000 steps, this is changeable
-            # Queen is immortal and unaffected (unless we change that!)
-            for ant in self.colony:
-                if ant.age >= 1000:
-                    ant.die()
-                    self.colony.remove(ant)
-                    del ant
-        # Increment step
-        self.stepCount += 1
-        # Animate
-        if self.animate:
-            self.grid.drawFullGrid()
-            for ant in self.colony: # Grid knows where the ants are but knows nothing about them - might give it colony access later?
-                if ant == self.colony[0]: # Queen
-                    self.grid.drawCell((ant.x,ant.y,ant.z), antDir = ant.dir)
-                else: # Workers
-                    self.grid.drawCell((ant.x,ant.y,ant.z), antDir = ant.dir, antHasFood = ant.hasFood)
-            self.grid.render()
-            sleep(0.01) # Animation speed, toggle/change this as desired
-        # End simulation if 1 food retrieved while training or if colony died off while not training
-        if (self.train and self.colony[0].food > 0) or ((not self.train) and len(self.colony) == 1):
-            # Stop!
-            print("Ended")
-            #self.grid.closeWindow()
-            #exit()
-            return False # Stop
-        return True # Continue
-
 
 # Test script
 # This should be moved to a new file once we get more detailed tests going for training
 if __name__ == "__main__":
     print("TEST")
     # Demo world
-    world = HexGridWorld(False, 0, animate = True) #, windowSize = (750,500)
+    world = HexGridWorld(True, 0, animate = True)
     # Run!
     for i in range(3):
-        run = True
-        while run:
-            run = world.step()
+        terminated = False
+        truncated = False
+        while not (terminated or truncated):
+            s_, r, terminated, truncated, info = world.step(randint(0, 4))
         world.reset()
     # Display briefly when done
     #sleep(5)
