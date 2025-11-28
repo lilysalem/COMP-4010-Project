@@ -4,6 +4,7 @@ Pygame animation window handler.
 """
 
 # Imports
+from hex_grid import HexGrid
 import pygame
 from math import sqrt
 
@@ -19,7 +20,7 @@ class Animator(object):
     origin: tuple # Display XY coordinate of grid XYZ coordinate 0,0,0 (where to spawn the grid from given its XYZ dimensions)
     
     # Initialize
-    def __init__(self, xR, yR, zR, windowSize):
+    def __init__(self, xR: int, yR: int, zR: int, windowSize: tuple[int, int]):
         # World dimensions, passed from world manager
         self.xR = xR
         self.yR = yR
@@ -28,7 +29,7 @@ class Animator(object):
         self.createWindow(windowSize)
     
     # Initialize Pygame window, called if simulation is animated - doesn't affect internals
-    def createWindow(self, windowSize):
+    def createWindow(self, windowSize: tuple[int, int]):
         # Setup
         pygame.init()
         pygame.display.init()
@@ -60,10 +61,9 @@ class Animator(object):
     # Render the window
     def updateWindow(self):
         pygame.display.update()
-        return
     
     # Update the display for one cell
-    def drawCell(self, grid, c, antDir = 0, antHasFood = False):
+    def drawCell(self, grid: HexGrid, c: tuple[int, int, int], antDir: int = 0, antHasFood: bool = False):
         # Where to put it
         wXY = self.convertGridCoord(c)
         wX, wY = wXY[0], wXY[1]
@@ -102,7 +102,7 @@ class Animator(object):
             pygame.draw.circle(self.window, (255,127,0), wXY, rH)
     
     # Update the whole world display
-    def drawFullGrid(self, grid):
+    def drawFullGrid(self, grid: HexGrid):
         self.drawCell(grid, (0,0,0))
         for i in range(self.xR):
             for ii in range(1, self.yR):
@@ -116,7 +116,7 @@ class Animator(object):
     
     # Convert an XYZ grid coord to an XY window coord
     # I hate math
-    def convertGridCoord(self, c):
+    def convertGridCoord(self, c: tuple[int, int, int]) -> tuple[int, int]:
         wX = self.origin[0] + ((c[1] - c[2]) * 1.5 * self.cellRad)
         wY = self.origin[1] - (((c[0] * 2) - c[1] - c[2]) * sqrt(0.75) * self.cellRad)
         return (wX,wY)

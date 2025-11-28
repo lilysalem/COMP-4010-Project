@@ -18,7 +18,7 @@ class HexGrid(object):
     trails: list # Special hollowed 3D array of ints, storing trail values
 
     # Initialize
-    def __init__(self, xR, yR, zR):
+    def __init__(self, xR: int, yR: int, zR: int):
         # World dimensions, passed from world manager
         self.xR = xR
         self.yR = yR
@@ -51,55 +51,55 @@ class HexGrid(object):
     # Convert and flatten a coordinate to fit within the grid system
     # Catches coords without at least one 0 and with negative values
     # (1,1,1) == (0,0,0), because they cancel, and (-1,0,0) == (0,1,1) for all axes
-    # So a coord can be adjusted the same on every value
-    def normalize(self, c):
+    # A coord can be adjusted with the same formula for all inputs which is nice
+    def normalize(self, c: tuple[int, int, int]) -> tuple[int, int, int]:
         m = min(c)
         return (c[0]-m,c[1]-m,c[2]-m)
     
     # Checker
-    def isWithinGrid(self, c):
+    def isWithinGrid(self, c: tuple[int, int, int]) -> bool:
         cN = self.normalize(c)
         return cN[0] < self.xR and cN[1] < self.yR and cN[2] < self.zR
     
     # Coord addition
-    def add(self, c1, c2):
+    def add(self, c1: tuple[int, int, int], c2: tuple[int, int, int]) -> tuple[int, int, int]:
         return self.normalize((c1[0]+c2[0],c1[1]+c2[1],c1[2]+c2[2]))
 
-    # Distance of shortest cell path between coords, ignoring tiles
-    def distance(self, c1, c2):
+    # Distance of shortest cell path between coords, ignoring tile types
+    def distance(self, c1: tuple[int, int, int], c2: tuple[int, int, int]) -> int:
         diff = (c2[0]-c1[0],c2[1]-c1[1],c2[2]-c1[2])
         return max(self.normalize(diff))
     
     # Getter
-    def getCell(self, c):
+    def getCell(self, c: tuple[int, int, int]) -> str:
         if c[0] >= self.xR or c[1] >= self.yR or c[2] >= self.zR:
             return "V" # Void, off the grid
         return self.cells[c[0]][c[1]][c[2]]
     
     # Getter
-    def getTrail(self, c):
+    def getTrail(self, c: tuple[int, int, int]) -> int:
         if c[0] >= self.xR or c[1] >= self.yR or c[2] >= self.zR:
             return 0
         return self.trails[c[0]][c[1]][c[2]]
     
     # Setter
-    def setCell(self, c, new):
+    def setCell(self, c: tuple[int, int, int], new: str):
         self.cells[c[0]][c[1]][c[2]] = new
     
     # Setter
-    def setTrail(self, c, new):
+    def setTrail(self, c: tuple[int, int, int], new: str):
         self.trails[c[0]][c[1]][c[2]] = new
     
     # Setter with default value for new trails
-    def addTrail(self, c):
+    def addTrail(self, c: tuple[int, int, int]):
         self.trails[c[0]][c[1]][c[2]] = 250 # This is changeable
     
     # Reduce the strength of the trail at a cell by 1
-    def fadeTrail(self, c):
+    def fadeTrail(self, c: tuple[int, int, int]):
         if self.trails[c[0]][c[1]][c[2]] > 0:
             self.trails[c[0]][c[1]][c[2]] -= 1
     
-    # Fade trail over whole grid, called every step
+    # Fade trail over whole grid
     def fadeAllTrails(self):
         self.fadeTrail((0,0,0))
         for i in range(self.xR):

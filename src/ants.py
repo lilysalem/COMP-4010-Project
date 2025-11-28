@@ -6,8 +6,8 @@ Parent ant class plus queen and worker.
 """
 
 # Imports
-from random import randint
 from hex_grid import HexGrid
+from random import randint
 
 
 # Parent ant class
@@ -24,13 +24,13 @@ class Ant(object):
     visionOffsets = ((1,0,0), (1,1,0), (0,1,0), (0,1,1), (0,0,1), (1,0,1)) # Constant array
     
     # Initialize
-    def __init__(self, grid, dir = 0, x = 0, y = 0, z = 0):
+    def __init__(self, grid, x: int = 0, y: int = 0, z: int = 0, dir: int = 0):
         # Setup
         self.grid = grid
-        self.dir = dir
         self.x = x
         self.y = y
         self.z = z
+        self.dir = dir
     
     # Template
     def act(self):
@@ -56,7 +56,6 @@ class Queen(Ant):
                 self.colony.append(Worker(self.grid, x = cSpawn[0], y = cSpawn[1], z = cSpawn[2], dir = (spawn + 3) % 6))
                 self.colony[-1].queen = self
                 self.grid.setCell(cSpawn, "W")
-                #self.grid.drawCell(cSpawn)
                 self.food -= 1
 
 # Worker
@@ -65,7 +64,7 @@ class Worker(Ant):
     queen: Queen = None # Queen of its colony
 
     # Action
-    def act(self, action = None):
+    def act(self, action: int = None) -> tuple[tuple[bool, str, str, str], int, int, tuple[bool, str, str, str]]:
         # Increment age
         self.age += 1
 
@@ -122,7 +121,7 @@ class Worker(Ant):
         return state, action, reward, stateNew
     
     # Observe cells in vision range
-    def observe(self):
+    def observe(self) -> tuple[list[str, str, str], tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]]:
         # Get and process the cells in its vision range
         # It sees three adjacent cells, detemined by its direction
         # Two more cell types which could replace an E:
@@ -172,15 +171,13 @@ class Worker(Ant):
         return vCells, vCoords
     
     # Move to a cell
-    def move(self, cDest, cell, turn):
+    def move(self, cDest: tuple[int, int, int], cell: str, turn: int) -> int:
         self.dir = (self.dir + turn + 6) % 6
         if self.grid.getCell(cDest) == "E": # Check cell on the actual grid to make sure it's empty
             self.grid.setCell(cDest, "W")
             self.grid.setCell((self.x,self.y,self.z), "E")
             if self.hasFood:
                 self.grid.addTrail(cDest)
-            #self.grid.drawCell((self.x,self.y,self.z))
-            #self.grid.drawCell(cDest, antHasFood = self.hasFood)
             self.x = cDest[0]
             self.y = cDest[1]
             self.z = cDest[2]
@@ -192,7 +189,7 @@ class Worker(Ant):
     # Pick up food
     # Succeeds if a food object is in any vision cell
     # If multiple are there, choose one at random
-    def pickUpFood(self, vCoords, vCells):
+    def pickUpFood(self, vCoords: tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]], vCells: list[str, str, str]) -> int:
         if self.hasFood:
             return -1
         if "F" in vCells:
@@ -206,14 +203,12 @@ class Worker(Ant):
             self.grid.addTrail(cFood)
             self.grid.addTrail((self.x,self.y,self.z))
             self.dir = (self.dir + 3) % 6
-            #self.grid.drawCell((self.x,self.y,self.z), antHasFood = True)
-            #self.grid.drawCell(cFood)
             return 10 # Big reward for picking up food
         return -1 # Bad reward if no food in range, wasted action
     
     # Give food to the queen
     # Succeeds if the queen is in any vision cell
-    def giveQueenFood(self, vCoords):
+    def giveQueenFood(self, vCoords: tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]) -> int:
         if not self.hasFood:
             return -1
         cQueen = (self.queen.x, self.queen.y, self.queen.z)
