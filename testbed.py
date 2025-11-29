@@ -16,13 +16,13 @@ from hex_grid_world import HexGridWorld
 from q_learning import QLearningAgent
 
 
-def train_agent() -> Tuple[List[int], List[int]]:
+def train_agent(animate: bool = False) -> Tuple[List[int], List[int]]:
     episodes = 500
     learning_rate = 0.1
     discount_factor = 0.9
     epsilon = 0.9
 
-    world = HexGridWorld(train=True, worldType=1, animate=True)
+    world = HexGridWorld(train=True, worldType=1, animate=animate)
 
     # Create Q-learning agent with fixed hyperparameters (no decay)
     if len(world.colony) > 1:
@@ -98,7 +98,7 @@ def plot_training_results(episode_rewards: List[int], episode_lengths: List[int]
 
 def main() -> None:
     print("Starting Q-learning training: 500 episodes with fixed hyperparameters")
-    rewards, lengths = train_agent()
+    rewards, lengths = train_agent( animate=True)
     plot_training_results(rewards, lengths)
     print("Training completed!")
 

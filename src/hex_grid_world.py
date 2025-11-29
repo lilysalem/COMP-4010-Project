@@ -101,7 +101,7 @@ class HexGridWorld(gym.Env):
             self.grid.fadeAllTrails()
 
         for ant in self.colony:
-            if ant.age >= 1000:
+            if ant.age >= 5000:
                 ant.die()
                 self.colony.remove(ant)
                 del ant
