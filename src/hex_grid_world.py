@@ -86,34 +86,31 @@ class HexGridWorld(gym.Env):
         s_ = None
         info = None
         if self.train:
-            # Only one worker is trained at a time (unless we figure out how to do multiple?)
-            s, a, r, s_ = self.colony[1].act(action = action)
-            # (Other training crap here)
+            if len(self.colony) > 1 and self.colony[1].q_agent is None:
+                self.colony[1].q_agent = ants.QLearningAgent()
+
+            if len(self.colony) > 1:
+                s, a, r, s_ = self.colony[1].act(action = action)
+            else:
+                s, a, r, s_ = None, None, 0, None
         else:
-            # All ants in the colony take an action each step
-            # Turn order is colony list order
             actCycle = 0
             while actCycle < len(self.colony):
                 self.colony[actCycle].act()
                 actCycle += 1
-            # Post-action stuff
-            # Reduce the strength of trails over time
             self.grid.fadeAllTrails()
-        # Kill worker ants that have reached the ends of their lives
-        # Lifespan is 1000 steps, this is changeable
-        # Queen is immortal and unaffected (unless we change that!)
+
         for ant in self.colony:
             if ant.age >= 1000:
                 ant.die()
                 self.colony.remove(ant)
                 del ant
-        # Increment step
+
         self.stepCount += 1
-        # Animate
+
         if self.animate:
             self.render()
-            sleep(0.01) # Animation speed, toggle/change this as desired
-        # End simulation if 1 food retrieved while training or if colony died off
+
         terminated = False
         truncated = False
         if self.train and self.colony[0].food > 0:
@@ -122,45 +119,34 @@ class HexGridWorld(gym.Env):
         elif len(self.colony) == 1:
             truncated = True
             print("Truncated")
-        return s_, r, terminated, truncated, info # Continue
+        return s_, r, terminated, truncated, info
     
-    # Update animation
     def render(self):
         self.animator.drawFullGrid(self.grid)
-        for ant in self.colony: # Grid knows where the ants are but knows nothing about them so gotta do them separately
-            if ant == self.colony[0]: # Queen
+        for ant in self.colony:
+            if ant == self.colony[0]:
                 self.animator.drawCell(self.grid, (ant.x,ant.y,ant.z), antDir = ant.dir)
-            else: # Workers
+            else:
                 self.animator.drawCell(self.grid, (ant.x,ant.y,ant.z), antDir = ant.dir, antHasFood = ant.hasFood)
         self.animator.updateWindow()
 
-    # Close - gotta add this
     def close(self):
         return
-    
-    # Generate the correct world type
-    # To add more: build its function and add it to this list
+
     def buildWorld(self):
         if self.worldType == 1:
             worlds.presetWorld1(self)
-        # Add more here
-        else: # 0 plus catch-all
+        else:
             worlds.randomWorld(self)
         
 
-# Test script
-# This should be moved to a new file once we get more detailed tests going for training
 if __name__ == "__main__":
     print("TEST")
-    # Demo world
     world = HexGridWorld(False, 0, animate = True)
-    # Run!
     for i in range(3):
         terminated = False
         truncated = False
         while not (terminated or truncated):
             s_, r, terminated, truncated, info = world.step(randint(0, 4))
         world.reset()
-    # Display briefly when done
-    #sleep(5)
     print("DONE")
