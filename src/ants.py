@@ -168,7 +168,7 @@ class Worker(Ant):
             if vCoords[i] == cQueen:
                 self.queen.food += 1
                 self.hasFood = False
-                return 5
+                return 10
         return -1
 
     def die(self):
