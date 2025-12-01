@@ -20,6 +20,7 @@ os.environ.setdefault("XDG_CACHE_HOME", os.path.join(tempfile.gettempdir(), "mat
 from hex_grid_world import HexGridWorld
 from q_learning import QLearningAgent
 from dyna_q import DynaQAgent
+from sarsa import SARSAAgent
 
 
 def train_agent(
@@ -183,9 +184,10 @@ def compare_q_vs_dyna(
     seed: Optional[int] = 42,
     output_path: Optional[str] = None,
     timestamped: bool = False,
+    include_sarsa: bool = True,
 ) -> None:
     """
-    Train both Q-learning and Dyna-Q (with the same hyperparameters) and plot a side-by-side comparison.
+    Train Q-learning, Dyna-Q (with the same hyperparameters) and optionally SARSA, then plot a side-by-side comparison.
     Adds rolling mean smoothing and logs deliveries/eval summaries.
     """
     # Common hyperparams and seed for reproducibility
@@ -216,6 +218,21 @@ def compare_q_vs_dyna(
         seed=seed,
     )
 
+    sarsa_rewards = sarsa_lengths = sarsa_deliveries = sarsa_agent = None
+    if include_sarsa:
+        sarsa_rewards, sarsa_lengths, sarsa_deliveries, sarsa_agent = train_agent(
+            animate=False,
+            agent_cls=SARSAAgent,
+            episodes=episodes,
+            epsilon=epsilon,
+            epsilon_decay=epsilon_decay,
+            min_epsilon=min_epsilon,
+            max_steps=max_steps,
+            collect_deliveries=True,
+            return_agent=True,
+            seed=seed,
+        )
+
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -230,12 +247,17 @@ def compare_q_vs_dyna(
     # Rewards with smoothing
     axes[0].plot(q_rewards, alpha=0.3, label="Q-learning (raw)")
     axes[0].plot(dyna_rewards, alpha=0.3, label=f"Dyna-Q {planning_steps} (raw)")
+    if sarsa_rewards:
+        axes[0].plot(sarsa_rewards, alpha=0.3, label="SARSA (raw)")
     q_smooth = rolling_mean(q_rewards)
     d_smooth = rolling_mean(dyna_rewards)
+    s_smooth = rolling_mean(sarsa_rewards) if sarsa_rewards else []
     if len(q_smooth) > 0:
         axes[0].plot(range(smooth_window - 1, smooth_window - 1 + len(q_smooth)), q_smooth, label="Q-learning (smooth)")
     if len(d_smooth) > 0:
         axes[0].plot(range(smooth_window - 1, smooth_window - 1 + len(d_smooth)), d_smooth, label=f"Dyna-Q {planning_steps} (smooth)")
+    if len(s_smooth) > 0:
+        axes[0].plot(range(smooth_window - 1, smooth_window - 1 + len(s_smooth)), s_smooth, label="SARSA (smooth)")
     axes[0].set_title('Training Rewards Comparison')
     axes[0].set_xlabel('Episode')
     axes[0].set_ylabel('Total Reward')
@@ -245,12 +267,17 @@ def compare_q_vs_dyna(
     # Lengths with smoothing
     axes[1].plot(q_lengths, alpha=0.3, label="Q-learning (raw)")
     axes[1].plot(dyna_lengths, alpha=0.3, label=f"Dyna-Q {planning_steps} (raw)")
+    if sarsa_lengths:
+        axes[1].plot(sarsa_lengths, alpha=0.3, label="SARSA (raw)")
     ql_smooth = rolling_mean(q_lengths)
     dl_smooth = rolling_mean(dyna_lengths)
+    sl_smooth = rolling_mean(sarsa_lengths) if sarsa_lengths else []
     if len(ql_smooth) > 0:
         axes[1].plot(range(smooth_window - 1, smooth_window - 1 + len(ql_smooth)), ql_smooth, label="Q-learning (smooth)")
     if len(dl_smooth) > 0:
         axes[1].plot(range(smooth_window - 1, smooth_window - 1 + len(dl_smooth)), dl_smooth, label=f"Dyna-Q {planning_steps} (smooth)")
+    if len(sl_smooth) > 0:
+        axes[1].plot(range(smooth_window - 1, smooth_window - 1 + len(sl_smooth)), sl_smooth, label="SARSA (smooth)")
     axes[1].set_title('Episode Lengths Comparison')
     axes[1].set_xlabel('Episode')
     axes[1].set_ylabel('Steps')
@@ -260,15 +287,18 @@ def compare_q_vs_dyna(
     # Deliveries
     axes[2].plot(q_deliveries, alpha=0.3, label="Q-learning deliveries")
     axes[2].plot(dyna_deliveries, alpha=0.3, label=f"Dyna-Q {planning_steps} deliveries")
+    if sarsa_deliveries:
+        axes[2].plot(sarsa_deliveries, alpha=0.3, label="SARSA deliveries")
     axes[2].set_title('Food Deliveries per Episode')
     axes[2].set_xlabel('Episode')
     axes[2].set_ylabel('Deliveries')
     axes[2].grid(True)
     axes[2].legend()
 
-    base_dir = os.path.join("results", "comparisons")
+    # Keep SARSA comparisons in their own folder; overwrite by default unless timestamped=True.
+    base_dir = os.path.join("results", "comparisons_with_sarsa" if include_sarsa else "comparisons")
     if timestamped:
-        run_dir = os.path.join(base_dir, datetime.now().strftime("%Y%m%d_%H%M%S"))
+        run_dir = os.path.join(base_dir, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
     else:
         run_dir = base_dir
     os.makedirs(run_dir, exist_ok=True)
@@ -287,7 +317,7 @@ def compare_q_vs_dyna(
             epsilon=0.0,
             epsilon_decay=1.0,
             min_epsilon=0.0,
-            **({} if agent_cls is QLearningAgent else {"planning_steps": planning_steps}),
+            **({"planning_steps": planning_steps} if agent_cls is DynaQAgent else {}),
         )
         eval_agent.q_table = dict(q_table)
         eval_world = HexGridWorld(train=False, worldType=1, animate=False)
@@ -322,9 +352,12 @@ def compare_q_vs_dyna(
     discount_factor = 0.9
     q_eval = greedy_eval(QLearningAgent, q_agent.q_table)
     d_eval = greedy_eval(DynaQAgent, dyna_agent.q_table)
+    s_eval = greedy_eval(SARSAAgent, sarsa_agent.q_table) if include_sarsa else None
     print("Greedy eval (50 eps):")
     print(f"  Q-learning:    avg_reward={q_eval[0]:.2f}, avg_steps={q_eval[1]:.1f}, avg_deliveries={q_eval[2]:.2f}")
     print(f"  Dyna-Q({planning_steps}): avg_reward={d_eval[0]:.2f}, avg_steps={d_eval[1]:.1f}, avg_deliveries={d_eval[2]:.2f}")
+    if s_eval:
+        print(f"  SARSA:         avg_reward={s_eval[0]:.2f}, avg_steps={s_eval[1]:.1f}, avg_deliveries={s_eval[2]:.2f}")
 
 
 def compare_q_vs_dyna_suite(
@@ -340,6 +373,7 @@ def compare_q_vs_dyna_suite(
 ) -> None:
     """
     Run multiple compare_q_vs_dyna configurations (planning_depth x epsilon schedule) and save separate plots.
+    Each comparison includes Q-learning, Dyna-Q, and SARSA.
     """
     base_dir = os.path.join("results", "comparisons")
     if timestamped:
