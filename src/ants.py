@@ -157,7 +157,7 @@ class Worker(Ant):
             self.grid.addTrail(cFood)
             self.grid.addTrail((self.x,self.y,self.z))
             self.dir = (self.dir + 3) % 6
-            return 10
+            return 3
         return -1
 
     def giveQueenFood(self, vCoords: tuple[tuple[int, int, int], tuple[int, int, int], tuple[int, int, int]]) -> int:
@@ -168,7 +168,7 @@ class Worker(Ant):
             if vCoords[i] == cQueen:
                 self.queen.food += 1
                 self.hasFood = False
-                return 100
+                return 5
         return -1
 
     def die(self):
