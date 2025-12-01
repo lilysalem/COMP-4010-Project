@@ -138,7 +138,7 @@ class HexGridWorld(gym.Env):
     def render(self):
         self.animator.drawFullGrid(self.grid)
         for ant in self.colony:
-            if ant == self.colony[0]:
+            if ant == self.colony[0] or type(ant) == ants.Queen:
                 self.animator.drawCell(self.grid, (ant.x,ant.y,ant.z), antDir = ant.dir)
             else:
                 self.animator.drawCell(self.grid, (ant.x,ant.y,ant.z), antDir = ant.dir, antHasFood = ant.hasFood)
