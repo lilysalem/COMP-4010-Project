@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from hex_grid_world import HexGridWorld
 from q_learning import QLearningAgent
 from dyna_q import DynaQAgent
+from sarsa import SARSAAgent
 
 
 def train_agent(
@@ -33,6 +34,7 @@ def train_agent(
     animate: bool = False
 ) -> Tuple[List[int], List[int], List[int], object, object]:
     min_epsilon = 0.01
+    algo_label = agent_cls.__name__
 
     world = HexGridWorld(train=True, worldType=1, animate=animate)
 
@@ -53,7 +55,7 @@ def train_agent(
     episode_lengths = []
     episode_deliveries = []
 
-    print(f"Training with Q-learning: lr={learning_rate}, γ={discount_factor}, ε={epsilon}, ε_decay={epsilon_decay}")
+    print(f"Training with {algo_label}: lr={learning_rate}, γ={discount_factor}, ε={epsilon}, ε_decay={epsilon_decay}")
 
     for episode in range(episodes):
         world.reset()
@@ -153,6 +155,7 @@ def main(timestamped: bool = False) -> None:
 
     algos = [
         ("q_learning", QLearningAgent, {}),
+        ("sarsa", SARSAAgent, {}),
         ("dyna_q_p3", DynaQAgent, {"planning_steps": 3}),
         ("dyna_q_p5", DynaQAgent, {"planning_steps": 5}),
     ]
