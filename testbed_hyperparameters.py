@@ -259,7 +259,7 @@ def main() -> None:
     )
     best_eval_rewards = all_training_data[best_idx][7]
     best_eval_lengths = all_training_data[best_idx][8]
-    eval_graph_path = 'training_hyperparam_evaluation_results.png'
+    eval_graph_path = 'training_hyperparameter_evaluation_results.png'
     plot_training_results(
         best_eval_rewards,
         best_eval_lengths,
