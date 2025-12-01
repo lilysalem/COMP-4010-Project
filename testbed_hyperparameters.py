@@ -36,7 +36,7 @@ def train_agent(
     min_epsilon = 0.01
     algo_label = agent_cls.__name__
 
-    world = HexGridWorld(train=True, worldType=1, animate=animate)
+    world = HexGridWorld(train=True, worldType=1, animate=True)
 
     # Create Q-learning agent with hyperparameters
     q_agent = None
@@ -186,7 +186,7 @@ def main(timestamped: bool = False) -> None:
             epsilon=eps,
             epsilon_decay=eps_decay,
             episodes=episodes,
-            animate=False
+            animate=True
         )
         
         # avg_last50: Average reward over the last 50 training episodes to determine final performance

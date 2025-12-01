@@ -47,7 +47,7 @@ def train_agent(
         random.seed(seed)
         np.random.seed(seed)
 
-    world = HexGridWorld(train=True, worldType=1, animate=animate)
+    world = HexGridWorld(train=True, worldType=1, animate=True)
 
     # Instantiate the requested agent type once and reuse across episodes
     q_agent = agent_cls(
@@ -320,7 +320,7 @@ def compare_q_vs_dyna(
             **({"planning_steps": planning_steps} if agent_cls is DynaQAgent else {}),
         )
         eval_agent.q_table = dict(q_table)
-        eval_world = HexGridWorld(train=False, worldType=1, animate=False)
+        eval_world = HexGridWorld(train=False, worldType=1, animate=True)
         if len(eval_world.colony) > 1:
             eval_world.colony[1].q_agent = eval_agent
         rewards = []

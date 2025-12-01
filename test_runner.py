@@ -139,7 +139,7 @@ def sarsa_smoothed_plot(
 def main():
     # Uncomment the test(s) you want to run:
 
-    # compare_q_vs_dyna_single()
+    compare_q_vs_dyna_single()
     # compare_q_dyna_sarsa()
     # compare_q_vs_dyna_grid()
     # hyperparameter_sweep_run()
