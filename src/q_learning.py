@@ -4,16 +4,14 @@ Handles Q-table, action selection, and learning updates.
 """
 
 import pickle
-import random
+from random import random, choice
 from typing import Dict, Tuple, Any, Optional
 
 
 class QLearningAgent:
     def __init__(self, learning_rate: float = 0.1, discount_factor: float = 0.9,
                  epsilon: float = 0.9, epsilon_decay: float = 1, min_epsilon: float = 0.01,
-                 n_actions: int = 5, seed: Optional[int] = None,
-                 reward_invalid: int = -1, reward_move: int = 0, reward_move_trail: int = 1,
-                 reward_pickup_food: int = 10, reward_give_food: int = 100):
+                 n_actions: int = 5, seed: Optional[int] = None):
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.epsilon = epsilon
@@ -30,13 +28,13 @@ class QLearningAgent:
         # Returns - (action, reward, next_state)
 
         # Epsilon-greedy action selection
-        if random.random() < self.epsilon:
-            action = random.choice(range(self.n_actions))
+        if random() < self.epsilon:
+            action = choice(range(self.n_actions))
         else:
             q_values = [self.q_table.get((state, a), 0.0) for a in range(self.n_actions)]
             max_q = max(q_values)
             best_actions = [a for a, q in enumerate(q_values) if q == max_q]
-            action = random.choice(best_actions)
+            action = choice(best_actions)
 
         # Environment step
         reward, next_state, terminated, truncated = env_step_func(action)
