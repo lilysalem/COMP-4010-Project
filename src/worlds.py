@@ -7,25 +7,28 @@ Also includes some helpers.
 
 # Imports
 from hex_grid import HexGrid
-from hex_grid_world import HexGridWorld
 import ants
 from random import randint
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from hex_grid_world import HexGridWorld
 
 
 # Helper for placing a queen
-def createQueen(world: HexGridWorld, c: tuple[int, int, int]):
+def createQueen(world: "HexGridWorld", c: tuple[int, int, int]):
     world.colony.append(ants.Queen(world.grid, x = c[0], y = c[1], z = c[2]))
     world.colony[0].colony = world.colony
     world.grid.setCell(c, "Q")
     
 # Helper for placing a worker
-def createWorker(world: HexGridWorld, c: tuple[int, int, int], dir: int = 0):
+def createWorker(world: "HexGridWorld", c: tuple[int, int, int], dir: int = 0):
     world.colony.append(ants.Worker(world.grid, x = c[0], y = c[1], z = c[2], dir = dir))
     world.colony[-1].queen = world.colony[0]
     world.grid.setCell(c, "W")
 
 # Helper for filling hexagonal clusters of cells with a tile type
-def buildCluster(world: HexGridWorld, c: tuple[int, int, int], scale: int, cellType: str):
+def buildCluster(world: "HexGridWorld", c: tuple[int, int, int], scale: int, cellType: str):
     x, y, z = c[0], c[1], c[2]
     # Centre cell
     if world.grid.isWithinGrid(c):
@@ -44,7 +47,7 @@ def buildCluster(world: HexGridWorld, c: tuple[int, int, int], scale: int, cellT
 # World 0 (default random)
 # Random dimensions, terrain, food
 # Stores the world on the first episode and loads it on subsequent
-def randomWorld(world: HexGridWorld):
+def randomWorld(world: "HexGridWorld"):
     # First episode
     if world.gridMemory == None:
         # New random map, first episode
@@ -138,7 +141,7 @@ def randomWorld(world: HexGridWorld):
 
 # World 1
 # Small, queen at bottom, one food at top, pre-drawn trail straight between them
-def presetWorld1(world: HexGridWorld):
+def presetWorld1(world: "HexGridWorld"):
     world.xR = 10
     world.yR = 10
     world.zR = 10

@@ -7,25 +7,28 @@ Pygame animation window handler.
 from hex_grid import HexGrid
 import pygame
 from math import sqrt
+import time
 
 
-# Animator
+# Animator with frame rate control
 class Animator(object):
-    xR: int # X range (world dimension, going up)
-    yR: int # Y range (world dimension, going right and down)
-    zR: int # Z range (world dimension, going left and down)
-    window: pygame.Surface = None # Display
-    windowSize: tuple # Display dimensions
-    cellRad: float # For one hexagonal cell, the distance from the centre to an outer point in window pixels (determined from window and grid dimensions, grid must fit in window)
-    origin: tuple # Display XY coordinate of grid XYZ coordinate 0,0,0 (where to spawn the grid from given its XYZ dimensions)
+    TARGET_FPS = 30  # set framerate here - it doesn't affect the training speed, but does take hella resources
+
+    xR: int
+    yR: int
+    zR: int
+    window: pygame.Surface = None
+    windowSize: tuple
+    cellRad: float
+    origin: tuple
+    last_frame_time: float = 0
     
     # Initialize
     def __init__(self, xR: int, yR: int, zR: int, windowSize: tuple[int, int]):
-        # World dimensions, passed from world manager
         self.xR = xR
         self.yR = yR
         self.zR = zR
-        # Start up window
+        self.last_frame_time = time.time()
         self.createWindow(windowSize)
     
     # Initialize Pygame window, called if simulation is animated - doesn't affect internals
@@ -58,9 +61,14 @@ class Animator(object):
             pygame.display.quit()
             pygame.quit()
     
-    # Render the window
     def updateWindow(self):
-        pygame.display.update()
+        current_time = time.time()
+        frame_time = 1.0 / self.TARGET_FPS
+        elapsed = current_time - self.last_frame_time
+
+        if elapsed >= frame_time:
+            pygame.display.update()
+            self.last_frame_time = current_time
     
     # Update the display for one cell
     def drawCell(self, grid: HexGrid, c: tuple[int, int, int], antDir: int = 0, antHasFood: bool = False):
