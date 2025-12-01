@@ -79,7 +79,7 @@ class HexGridWorld(gym.Env):
             sleep(1)
     
     # Run simulation step
-    def step(self, action: int) -> tuple[tuple[bool, str, str, str] | None, int | None, bool, bool, str | None]:
+    def step(self, action: int | None) -> tuple[tuple[bool, str, str, str] | None, int | None, bool, bool, str | None]:
         s = None
         a = None
         r = None
@@ -87,16 +87,27 @@ class HexGridWorld(gym.Env):
         info = None
         if self.train:
             if len(self.colony) > 1 and self.colony[1].q_agent is None:
-                self.colony[1].q_agent = ants.QLearningAgent()
+                from q_learning import QLearningAgent
+                self.colony[1].q_agent = QLearningAgent()
 
             if len(self.colony) > 1:
                 s, a, r, s_ = self.colony[1].act(action = action)
             else:
                 s, a, r, s_ = None, None, 0, None
         else:
+            r = 0  # Initialize reward for evaluation mode
             actCycle = 0
             while actCycle < len(self.colony):
-                self.colony[actCycle].act()
+                # Only call act() on workers if they have a Q-agent
+                # Queen (index 0) doesn't need Q-agent, Worker (index 1+) does
+                if actCycle == 0: # The queen doesn't need a Q-agent, it just acts normally
+                    self.colony[actCycle].act()
+                elif actCycle > 0 and self.colony[actCycle].q_agent is not None: # The worker needs a Q-agent to act
+                    # Capture reward from worker's act() call for evaluation
+                    s, a, r_worker, s_ = self.colony[actCycle].act()
+                    # Accumulate reward from worker
+                    if r_worker is not None:
+                        r += r_worker
                 actCycle += 1
             self.grid.fadeAllTrails()
 
@@ -113,12 +124,15 @@ class HexGridWorld(gym.Env):
 
         terminated = False
         truncated = False
-        if self.train and self.colony[0].food > 0:
+        # Checks if the colony exists and the queen has food. We terminate based on whether queen has food, not dependent on the self.train mode.
+        if len(self.colony) > 0 and self.colony[0].food > 0: #changed from self.train to self.colony because self.train = False during evaluation mode and then the episode would never terminate
             terminated = True
-            print("Terminated")
+            if self.train:
+                print("Terminated")
         elif len(self.colony) == 1:
             truncated = True
-            print("Truncated")
+            if self.train:
+                print("Truncated")
         return s_, r, terminated, truncated, info
     
     def render(self):
