@@ -10,6 +10,7 @@ import sys
 import os
 import itertools
 import csv
+from datetime import datetime
 from typing import List, Tuple
 
 # Add src directory to Python path
@@ -18,9 +19,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 import matplotlib.pyplot as plt
 from hex_grid_world import HexGridWorld
 from q_learning import QLearningAgent
+from dyna_q import DynaQAgent
 
 
 def train_agent(
+    agent_cls,
+    agent_kwargs: dict,
     learning_rate: float,
     discount_factor: float,
     epsilon: float,
@@ -35,12 +39,13 @@ def train_agent(
     # Create Q-learning agent with hyperparameters
     q_agent = None
     if len(world.colony) > 1:
-        q_agent = QLearningAgent(
+        q_agent = agent_cls(
             learning_rate=learning_rate,
             discount_factor=discount_factor,
             epsilon=epsilon,
             epsilon_decay=epsilon_decay,
-            min_epsilon=min_epsilon
+            min_epsilon=min_epsilon,
+            **agent_kwargs,
         )
         world.colony[1].q_agent = q_agent
 
@@ -59,12 +64,13 @@ def train_agent(
         # Reassign Q-agent after reset (Q-table persists across episodes)
         if len(world.colony) > 1:
             if q_agent is None:
-                q_agent = QLearningAgent(
+                q_agent = agent_cls(
                     learning_rate=learning_rate,
                     discount_factor=discount_factor,
                     epsilon=epsilon,
                     epsilon_decay=epsilon_decay,
-                    min_epsilon=min_epsilon
+                    min_epsilon=min_epsilon,
+                    **agent_kwargs,
                 )
             world.colony[1].q_agent = q_agent
 
@@ -138,25 +144,40 @@ def plot_training_results(
         plt.show()
 
 
-def main() -> None:
-    lrs = [0.0005, 0.001, 0.005, 0.01]
+def main(timestamped: bool = False) -> None:
+    lrs = [0.001, 0.01]
     gammas = [0.9, 0.99]
-    epsilons = [0.5, 0.9]
-    eps_decays = [0.995]
-    episodes =500
+    epsilons = [0.3, 0.5]
+    eps_decays = [0.99, 0.995]
+    episodes = 300
 
-    combos = list(itertools.product(lrs, gammas, epsilons, eps_decays))
+    algos = [
+        ("q_learning", QLearningAgent, {}),
+        ("dyna_q_p3", DynaQAgent, {"planning_steps": 3}),
+        ("dyna_q_p5", DynaQAgent, {"planning_steps": 5}),
+    ]
+
+    combos = list(itertools.product(algos, lrs, gammas, epsilons, eps_decays))
     print(f"Starting hyperparameter search: {len(combos)} combinations, {episodes} episodes each\n")
 
-    os.makedirs('logs', exist_ok=True)
+    # Directory to store results; timestamped if requested
+    if timestamped:
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = os.path.join("results", "hyperparameter_sweeps", f"hp_sweep_{run_id}")
+    else:
+        run_dir = os.path.join("results", "hyperparameter_sweeps")
+    os.makedirs(run_dir, exist_ok=True)
     results = []
     all_training_data = []
 
     # Run all experiments and collect full training data
-    for i, (lr, gamma, eps, eps_decay) in enumerate(combos, 1):
-        print(f"[{i}/{len(combos)}] Testing lr={lr}, gamma={gamma}, eps={eps}, eps_decay={eps_decay}")
-        
+    for i, combo in enumerate(combos, 1):
+        (algo_name, agent_cls, agent_kwargs), lr, gamma, eps, eps_decay = combo
+        print(f"[{i}/{len(combos)}] Testing algo={algo_name}, lr={lr}, gamma={gamma}, eps={eps}, eps_decay={eps_decay}")
+
         episode_rewards, episode_lengths, episode_deliveries, q_agent, world = train_agent(
+            agent_cls=agent_cls,
+            agent_kwargs=agent_kwargs,
             learning_rate=lr,
             discount_factor=gamma,
             epsilon=eps,
@@ -171,19 +192,20 @@ def main() -> None:
         avg_deliveries = sum(episode_deliveries) / len(episode_deliveries)
         
         # Save per-combo training plot
-        combo_name = f"lr{lr}_g{gamma}_e{eps}_d{eps_decay}".replace('.', 'p')
-        train_plot_path = os.path.join('logs', f"train_{combo_name}.png")
+        combo_name = f"{algo_name}_lr{lr}_g{gamma}_e{eps}_d{eps_decay}".replace('.', 'p')
+        train_plot_path = os.path.join(run_dir, f"train_{combo_name}.png")
         plot_training_results(episode_rewards, episode_lengths, learning_rate=lr, discount_factor=gamma, epsilon=eps, epsilon_decay=eps_decay, save_path=train_plot_path)
 
         # Evaluate policy in full environment (train=False)
         eval_episodes = 50
         # Create a fresh copy of the Q-agent for evaluation and set epsilon to 0 for deterministic greedy policy
-        eval_agent = QLearningAgent(
+        eval_agent = agent_cls(
             learning_rate=lr,
             discount_factor=gamma,
             epsilon=0.0,
             epsilon_decay=eps_decay,
-            min_epsilon=0.01
+            min_epsilon=0.01,
+            **agent_kwargs,
         )
         # Copy trained Q-table to eval agent
         eval_agent.q_table = dict(q_agent.q_table)
@@ -219,35 +241,35 @@ def main() -> None:
         avg_eval_steps = sum(eval_lengths) / len(eval_lengths)
         avg_eval_deliveries = sum(eval_deliveries) / len(eval_deliveries)
 
-        results.append((lr, gamma, eps, eps_decay, avg_last50, avg_steps, avg_deliveries, avg_eval_reward, avg_eval_steps, avg_eval_deliveries))
-        all_training_data.append((lr, gamma, eps, eps_decay, episode_rewards, episode_lengths, episode_deliveries, eval_rewards, eval_lengths, eval_deliveries))
-        
+        results.append((algo_name, lr, gamma, eps, eps_decay, avg_last50, avg_steps, avg_deliveries, avg_eval_reward, avg_eval_steps, avg_eval_deliveries))
+        all_training_data.append((algo_name, lr, gamma, eps, eps_decay, episode_rewards, episode_lengths, episode_deliveries, eval_rewards, eval_lengths, eval_deliveries))
+
         print(f"  -> train_avg_reward_last50={avg_last50:.2f}, train_avg_steps={avg_steps:.2f}, train_avg_deliveries={avg_deliveries:.2f}, eval_avg_reward={avg_eval_reward:.2f}, eval_avg_steps={avg_eval_steps:.1f}, eval_avg_deliveries={avg_eval_deliveries:.2f}\n")
     
     # Find best configuration
     # Choose best configuration from the results of train_avg_last50
-    best_idx = max(range(len(results)), key=lambda i: results[i][4])
+    best_idx = max(range(len(results)), key=lambda i: results[i][5])
     best = results[best_idx]
-    best_lr, best_gamma, best_eps, best_eps_decay = best[0], best[1], best[2], best[3]
+    best_algo, best_lr, best_gamma, best_eps, best_eps_decay = best[0], best[1], best[2], best[3], best[4]
     
     print(f"\nBest configuration:")
-    print(f"  lr={best_lr}, gamma={best_gamma}, eps={best_eps}, eps_decay={best_eps_decay}")
-    print(f"  train_avg_reward_last50={best[4]:.2f}, train_avg_steps={best[5]:.2f}, train_avg_deliveries={best[6]:.2f}")
-    print(f"  eval_avg_reward={best[7]:.2f}, eval_avg_steps={best[8]:.2f}, eval_avg_deliveries={best[9]:.2f}")
+    print(f"  algo={best_algo}, lr={best_lr}, gamma={best_gamma}, eps={best_eps}, eps_decay={best_eps_decay}")
+    print(f"  train_avg_reward_last50={best[5]:.2f}, train_avg_steps={best[6]:.2f}, train_avg_deliveries={best[7]:.2f}")
+    print(f"  eval_avg_reward={best[8]:.2f}, eval_avg_steps={best[9]:.2f}, eval_avg_deliveries={best[10]:.2f}")
     
     # Write results to a CSV file
-    csv_path = 'logs/hyperparameter_results.csv'
+    csv_path = os.path.join(run_dir, 'hyperparameter_results.csv')
     with open(csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['lr', 'gamma', 'epsilon', 'eps_decay', 'train_avg_last50', 'train_avg_steps', 'train_avg_deliveries', 'eval_avg_reward', 'eval_avg_steps', 'eval_avg_deliveries'])
+        writer.writerow(['algo', 'lr', 'gamma', 'epsilon', 'eps_decay', 'train_avg_last50', 'train_avg_steps', 'train_avg_deliveries', 'eval_avg_reward', 'eval_avg_steps', 'eval_avg_deliveries'])
         writer.writerows(results)
     print(f"CSV saved: {csv_path}")
 
     # Generate graph for best configuration
     print(f"\nGenerating training graph for best configuration...")
-    best_episode_rewards, best_episode_lengths = all_training_data[best_idx][4], all_training_data[best_idx][5]
-    
-    graph_path = 'training_hyperparameters_results.png'
+    best_episode_rewards, best_episode_lengths = all_training_data[best_idx][5], all_training_data[best_idx][6]
+
+    graph_path = os.path.join(run_dir, f'{best_algo}_training_hyperparameters_results.png')
     plot_training_results(
         best_episode_rewards,
         best_episode_lengths,
@@ -257,9 +279,9 @@ def main() -> None:
         epsilon_decay=best_eps_decay,
         save_path=graph_path
     )
-    best_eval_rewards = all_training_data[best_idx][7]
-    best_eval_lengths = all_training_data[best_idx][8]
-    eval_graph_path = 'training_hyperparameter_evaluation_results.png'
+    best_eval_rewards = all_training_data[best_idx][8]
+    best_eval_lengths = all_training_data[best_idx][9]
+    eval_graph_path = os.path.join(run_dir, f'{best_algo}_training_hyperparameter_evaluation_results.png')
     plot_training_results(
         best_eval_rewards,
         best_eval_lengths,
@@ -274,10 +296,10 @@ def main() -> None:
     
     # Print sorted table (by train_avg_last50)
     print('\nTop configs (by train_avg_last50):')
-    print('lr\tgamma\teps\tdecay\ttrain_avg_last50\ttrain_avg_steps\ttrain_avg_deliveries\teval_avg_reward\teval_avg_steps\teval_avg_deliveries')
-    sorted_results = sorted(results, key=lambda r: r[4], reverse=True)
+    print('algo\tlr\tgamma\teps\tdecay\ttrain_avg_last50\ttrain_avg_steps\ttrain_avg_deliveries\teval_avg_reward\teval_avg_steps\teval_avg_deliveries')
+    sorted_results = sorted(results, key=lambda r: r[5], reverse=True)
     for r in sorted_results[:10]:
-        print(f"{r[0]}\t{r[1]}\t{r[2]}\t{r[3]}\t{r[4]:.2f}\t{r[5]:.1f}\t{r[6]:.2f}\t{r[7]:.2f}\t{r[8]:.1f}\t{r[9]:.2f}")
+        print(f"{r[0]}\t{r[1]}\t{r[2]}\t{r[3]}\t{r[4]}\t{r[5]:.2f}\t{r[6]:.1f}\t{r[7]:.2f}\t{r[8]:.2f}\t{r[9]:.1f}\t{r[10]:.2f}")
 
 
 if __name__ == '__main__':
