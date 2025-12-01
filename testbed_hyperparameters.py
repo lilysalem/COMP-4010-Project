@@ -75,7 +75,7 @@ def train_agent(
 
         while not (terminated or truncated) and steps < 1000:
             # Q-learning agent selects action internally with Worker.act() so we pass None as action since Worker.act() will use the Q-learning agent to determine the action
-            next_state, reward, terminated, truncated, _ = world.step(None)
+            _, reward, terminated, truncated, _ = world.step(None)
 
             if reward is not None:
                 total_reward += reward

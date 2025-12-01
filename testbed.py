@@ -58,7 +58,7 @@ def train_agent(animate: bool = False) -> Tuple[List[int], List[int]]:
         truncated = False
 
         while not (terminated or truncated) and steps < 1000:
-            next_state, reward, terminated, truncated, _ = world.step(None)
+            _, reward, terminated, truncated, _ = world.step(None)
 
             if reward is not None:
                 total_reward += reward
