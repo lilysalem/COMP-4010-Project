@@ -6,7 +6,6 @@ Runs 500 episodes with fixed hyperparameters and produces training graphs.
 import sys
 import os
 from typing import List, Tuple
-from random import randint
 
 # Add src directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -26,13 +25,14 @@ def train_agent(animate: bool = False) -> Tuple[List[int], List[int]]:
 
     # Create Q-learning agent with fixed hyperparameters (no decay)
     if len(world.colony) > 1:
-        world.colony[1].q_agent = QLearningAgent(
+        q_agent = QLearningAgent(
             learning_rate=learning_rate,
             discount_factor=discount_factor,
             epsilon=epsilon,
             epsilon_decay=0.99,  # No decay
             min_epsilon=epsilon  # Keep epsilon constant
         )
+        world.colony[1].q_agent = q_agent
 
     episode_rewards = []
     episode_lengths = []
@@ -58,8 +58,7 @@ def train_agent(animate: bool = False) -> Tuple[List[int], List[int]]:
         truncated = False
 
         while not (terminated or truncated) and steps < 1000:
-            action = randint(0, 4)
-            _, reward, terminated, truncated, _ = world.step(action)
+            next_state, reward, terminated, truncated, _ = world.step(None)
 
             if reward is not None:
                 total_reward += reward
