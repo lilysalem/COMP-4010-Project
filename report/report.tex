@@ -36,9 +36,8 @@
 
 \author{
   Akanksha Paudyal, Alice Yang, Damon Gee, Lily Salem, Tom Fan \\
-  Department of Computer Science \\
-  University of Manitoba \\
-  \{\texttt{paudyala, yangal, geed, saleml, fant}\}\texttt{@myumanitoba.ca}
+  School of Computer Science \\
+  Carleton University \\
 }
 \begin{document}
 
@@ -54,7 +53,6 @@ Ants have been a frequent subject of AI simulation, particularly regarding their
 
 Our goal for this project is to create Anthills, an OpenAI Gymnasium-based environment which will allow agents of multiple distinct castes and allegiances to train behaviors as a collective in procedurally-generated environments simulating their natural habitat. Our goal is to make Anthills highly configurable while maintaining the efficiency needed to conduct training in consumer-grade hardware - even simulating colony competition is likely breaking new ground. We will do so through simplifying graphics processing and eliminating complex physics, making Anthills an excellent medium for simulating large groups of agents.
 
-Here is an example of an citation \citep{hale_atomic_2001}. Here is an example of an inline citation from \cite{haber_inversion_2007}.
 
 %% ------------------------------------------------------------
 
@@ -77,8 +75,36 @@ Here is an example of an citation \citep{hale_atomic_2001}. Here is an example o
 
 \section{Conclusions}
 
+In this paper, we introduced our custom reinforcement learning environment and an agent designed to operate within it. 
+Evaluating the agent with multiple common RL algorithms including on and off policy, we found that it was able to reliably 
+improve its per episode performance over the course of a 500-episode training epoch. Notably, this is despite the state 
+perception constraints we placed on the agent, having only given it information on 3 squares immediately adjacent to its 
+current position in order to inform its action selection.
 
-< --- TODO --- >
+\medskip
+However, some intended features, testing, and stretch goals remain incomplete. Given more time, we would prioritize 
+completing these stretch goals that we had set previously, including:
+
+\medskip
+\begin{itemize}
+    \item Experimenting with the state space and state awareness of the agents - deliberately limiting the observation 
+        space of the agent was part of our experimental design. However, we also wanted to test the effects of increasing 
+        this observation space on the behavior of the agents using various algorithms.
+    \item Multiagent training - ants display a remarkable level of collective intelligence \citep{trail_pheremones_2009} 
+    While we tested a single agent using predesignated pheromone trails, we had a grander vision of many agents collaborating 
+    in the environment in order to forage for resources.
+    \item In addition to the previous goal, we would also aim to do some batch or offline training, as agents would be 
+    able to appear and disappear within the course of an episode
+
+\end{itemize}
+
+\medskip
+In conclusion, our results from testing the reinforcement learning algorithm showed that a simulated ant-like agent can 
+learn to act effectively in gathering resources in a complex gridworld environment using common RL techniques. It can 
+even overcome constraints like an extremely limited observation space. This demonstrates that our project is a good 
+proof-of-concept for a broader simulation system for ant simulation as it stands, and can yield even more significant 
+observations and results given further development.
+
 
 
 %% ------------------------------------------------------------
