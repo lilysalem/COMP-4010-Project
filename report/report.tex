@@ -1,0 +1,94 @@
+\documentclass[10pt]{article}
+
+% NeurIPS-style formatting packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times} % Times font for NeurIPS style
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{algorithm2e}
+\usepackage{lipsum}
+\usepackage[numbers]{natbib}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+% NeurIPS-style page layout
+\usepackage[letterpaper]{geometry}
+\geometry{
+  left=1.5in,
+  right=1.5in,
+  top=1in,
+  bottom=1in,
+  columnsep=0.25in
+}
+
+% NeurIPS-style sectioning
+\usepackage{titlesec}
+\titleformat{\section}{\large\bf}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bf}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\it}{\thesubsubsection}{1em}{}
+
+\title{Ants and Reinforcement Learning Algorithms}
+
+\author{
+  Akanksha Paudyal, Alice Yang, Damon Gee, Lily Salem, Tom Fan \\
+  Department of Computer Science \\
+  University of Manitoba \\
+  \{\texttt{paudyala, yangal, geed, saleml, fant}\}\texttt{@myumanitoba.ca}
+}
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Ants have been a frequent subject of AI simulation, particularly regarding their use of pheromone trails for path optimization. However, we could not find any simulations where multiple simulated colonies compete over limited resources, nor any that incorporate the worker polymorphism which naturally delegates labour in many ant species. Our goal for this project is to create Anthills, an OpenAI Gymnasium-based environment which will allow agents of multiple distinct castes and allegiances to train behaviors as a collective in procedurally-generated environments simulating their natural habitat. We present implementations of Q-learning, SARSA, and Dyna-Q algorithms within this multi-agent competitive environment, demonstrating emergent behaviors in resource competition scenarios.
+\end{abstract}
+
+\section{Introduction}
+
+Ants have been a frequent subject of AI simulation, particularly regarding their use of pheromone trails for path optimization. However, we could not find any simulations where multiple simulated colonies compete over limited resources, nor any that incorporate the worker polymorphism which naturally delegates labour in many ant species.
+
+Our goal for this project is to create Anthills, an OpenAI Gymnasium-based environment which will allow agents of multiple distinct castes and allegiances to train behaviors as a collective in procedurally-generated environments simulating their natural habitat. Our goal is to make Anthills highly configurable while maintaining the efficiency needed to conduct training in consumer-grade hardware - even simulating colony competition is likely breaking new ground. We will do so through simplifying graphics processing and eliminating complex physics, making Anthills an excellent medium for simulating large groups of agents.
+
+Here is an example of an citation \citep{hale_atomic_2001}. Here is an example of an inline citation from \cite{haber_inversion_2007}.
+
+%% ------------------------------------------------------------
+
+\section{Approaches}
+
+< --- TODO --- >
+
+
+
+\section{Empirical Studies}
+
+< --- TODO --- >
+
+
+\section{Discussion}
+
+
+< --- TODO --- >
+
+
+\section{Conclusions}
+
+
+< --- TODO --- >
+
+
+%% ------------------------------------------------------------
+%\newpage
+\bibliographystyle{plain}
+\bibliography{references}
+%% ------------------------------------------------------------
+
+%% ------------------------------------------------------------
+
+
+%% -----------------
+\end{document}
