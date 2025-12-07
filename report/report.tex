@@ -66,7 +66,56 @@ Here is an example of an citation \citep{hale_atomic_2001}. Here is an example o
 
 \section{Empirical Studies}
 
-< --- TODO --- >
+In this section, we compare the three temporal-difference control algorithms implemented in this project: Q-learning, SARSA, and Dyna-Q. Evaluate overall task performance, training efficiency, and hyperparameter sensitivity, and investigates whether Dyna-Q’s model-based planning offers advantages under the environment’s limited observability.
+
+\subsection{Experimental Design}
+
+For the experiment, we used a consistent training set up to ensure a fair comparison across algorithms. Each agent trained for 500 episodes, with a limit of 600 steps per episode. Exploration followed an $\epsilon$-greedy policy with exponential decay, and episodes terminated early when the agent successfully found food and delivered it back to the queen. For each run, we recorded per-episode reward, episode length, and food deliveries, and computed average reward, average steps, average deliveries over the last 50 episodes to help us analyze the results. We also performed greedy evaluations ($\epsilon=0$) over 50 rollouts to measure final policy quality independently of exploration. We explored a small but systematic hyperparameter grid: learning rate $\alpha \in \{0.001, 0.01\}$, discount $\gamma \in \{0.9, 0.99\}$, initial $\epsilon \in \{0.3, 0.5\}$, $\epsilon$-decay $\in \{0.99, 0.995\}$. For Dyna-Q, we also tested different planning\_steps $\in \{3, 5\}$, to compare whether additional simulated experience improves learning efficiency.
+
+\subsection{Comparative Performance of Algorithms}
+
+\paragraph{Q-learning.}  
+\subsection*{Q-learning}
+
+Overall, Q-learning achieved the highest average reward among all methods. The best configuration ($\alpha{=}0.001$, $\gamma{=}0.99$, $\epsilon{=}0.3$, $\text{decay}{=}0.99$) reached:
+\begin{itemize}
+  \item \textbf{\textasciitilde56.9 reward} (average over last 50 episodes)
+  \item \textbf{\textasciitilde101 steps} per episode
+  \item \textbf{Delivery success $\approx 1.0$} (meaning nearly all episodes achieved the goal once)
+\end{itemize}
+
+These results demonstrate that off-policy bootstrapping is effective in this environment, where positive rewards (pickup $+3$, delivery $+10$) are sparse. As discussed in Section~2 (Approach), Q-learning's optimistic value backups allow it to propagate high rewards even from rare successful trajectories. However, these high-reward policies usually lead to longer episodes, indicating that Q-learning often selects longer but high-value paths.
+
+\paragraph{SARSA.}  
+SARSA produced slightly lower peak reward but with substantially shorter episode lengths, demonstrating the more conservative nature of on-policy updates. The best SARSA configuration achieved  around 47.3 reward, 73 steps and the shortest observed SARSA episode is 55 steps.
+SARSA is more stable because it focuses on the actual next action rather than the maximum possible future value, limiting over-estimation and encouraging efficient paths. Compared to Q-learning, SARSA consistently yielded more compact and direct routes to the goal.
+
+\paragraph{Dyna-Q.}  
+\subsection*{Dyna-Q}
+
+Dyna-Q was evaluated to determine whether planning through model replay provides measurable benefits given the ant's limited vision. Performance depended strongly on \textbf{planning depth}:
+\begin{itemize}
+  \item Best \textbf{p5} configuration: \textasciitilde49.0 reward, \textasciitilde138 steps
+  \item Best \textbf{p3} configuration: \textasciitilde47.6 reward, \textasciitilde81 steps
+\end{itemize}
+
+Although higher planning improved reward in some cases, it frequently \textbf{increased episode length}, suggesting that replay amplified the effect of aggressive updates or high $\epsilon$. Dyna-Q therefore did not surpass Q-learning's peak reward, and it often balanced between Q-learning and SARSA in terms of reward and efficiency. This aligns with our expectation (Section~2) that model-based planning may be limited by the small state space and modest movement penalties.
+
+\paragraph{Greedy Evaluation.}  
+When evaluated without exploration ($\epsilon=0$), all three algorithms converged to highly similar deterministic policies: approximately 45 reward, 34--36 steps, and consistent delivery success. This indicates that algorithmic differences primarily affect learning dynamics rather than the quality of the converged policy.
+
+\subsection{Analysis of Results}
+
+\paragraph{Hyperparameter Sensitivity.}  
+Learning rate had the strongest impact: Q-learning performed best with α=0.001, while α=0.01 destabilized updates, especially for Dyna-Q; SARSA handled larger α more reliably. Q-learning also favored moderate exploration (ε=0.3 with fast decay), whereas Dyna-Q sometimes benefited from higher ε=0.5 at the cost of longer episodes, and SARSA remained robust. A higher discount factor (γ=0.99) improved Q-learning’s reward, with more configuration-dependent effects for SARSA and Dyna-Q. Increasing planning depth improved Dyna-Q’s reward in limited cases but generally lengthened episodes, with p3 more stable than p5.
+
+\paragraph{Time and Space Considerations.}  
+Computationally, all methods have similar per-step cost except Dyna-Q, which adds an extra O(planning_steps) update. With planning_steps ∈ {3,5}, this overhead is small, but our results show no clear sample-efficiency gain to justify it. The environment’s simple state representation likely limits the benefit of deeper planning.
+
+\paragraph{Interpretation.}  
+These results indicate that, in this environment, reward structure and limited vision restrain the benefits of model-based planning. Q-learning excels in extracting reward from sparse high-value transitions, while SARSA remains the most step-efficient. Dyna-Q offers intermediate performance and could demonstrate clearer advantages in environments with higher penalties for wandering, richer sensory inputs, or more complex dynamics. 
+
+
 
 
 \section{Discussion}
