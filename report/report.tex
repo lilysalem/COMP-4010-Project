@@ -124,7 +124,7 @@ Although higher planning improved reward in some cases, it frequently \textbf{in
   \label{fig:q-dyna-comparison}
 \end{figure}
 
-This graph shows all three methods converge to similar reward levels, but Q-learning and Dyna-Q show higher early variance, while SARSA remains more stable. Episode lengths decrease fastest for SARSA, reflecting its tendency to learn shorter, more direct trajectories. Dyna-Q exhibits greater fluctuation in both rewards and steps, consistent with planning amplifying noisy updates. The delivery plot shows that all algorithms quickly achieve reliable one-delivery episodes, indicating that differences lie mainly in training stability and efficiency rather than final task success.
+This graph shows all three methods converge to a close reward level range, but Q-learning and Dyna-Q show slighly higher early variance, while SARSA remains more stable. Episode lengths decrease fastest for SARSA, reflecting its tendency to learn shorter, more direct trajectories. Dyna-Q exhibits greater fluctuation in both rewards and steps, consistent with planning amplifying noisy updates. The delivery plot shows that all algorithms quickly achieve reliable one-delivery episodes, indicating that in this simple environment, differences lie mainly in training stability and efficiency rather than final task success.
 
 \paragraph{Greedy Evaluation.}  
 When evaluated without exploration ($\epsilon=0$), all three algorithms converged to highly similar deterministic policies: approximately 45 reward, 34--36 steps, and consistent delivery success. This indicates that algorithmic differences primarily affect learning dynamics rather than the quality of the converged policy.
