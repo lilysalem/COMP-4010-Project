@@ -74,6 +74,22 @@ For the experiment, we used a consistent training set up to ensure a fair compar
 
 \subsection{Comparative Performance of Algorithms}
 
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\hline
+Algorithm & Train avg reward (last 50) & Train avg steps & lr / $\gamma$ / $\epsilon$ / decay & Deliveries \\
+\hline
+Q-learning & 56.9 & 100.9 & 0.001 / 0.99 / 0.3 / 0.99 & 1.0 \\
+Dyna-Q (p5) & 49.0 & 137.9 & 0.01 / 0.99 / 0.5 / 0.995 & 0.99 \\
+Dyna-Q (p3) & 47.6 & 81.0 & 0.01 / 0.9 / 0.3 / 0.995 & 1.0 \\
+SARSA & 47.3 & 73.0 & 0.01 / 0.9 / 0.3 / 0.995 & 1.0 \\
+\hline
+\end{tabular}
+\caption{Best-performing configurations per algorithm. Rewards are averaged over the last 50 training episodes; deliveries $\approx 1.0$ indicates nearly every episode achieved a food return.}
+\label{tab:best-configs}
+\end{table}
+
 \paragraph{Q-learning.}  
 \subsection*{Q-learning}
 
@@ -100,6 +116,15 @@ Dyna-Q was evaluated to determine whether planning through model replay provides
 \end{itemize}
 
 Although higher planning improved reward in some cases, it frequently \textbf{increased episode length}, suggesting that replay amplified the effect of aggressive updates or high $\epsilon$. Dyna-Q therefore did not surpass Q-learning's peak reward, and it often balanced between Q-learning and SARSA in terms of reward and efficiency. This aligns with our expectation (Section~2) that model-based planning may be limited by the small state space and modest movement penalties.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.9\linewidth]{results/comparisons/training_results_comparison.png}
+  \caption{Training rewards and episode lengths comparing Q-learning, Dyna-Q and SARSA (with shared hyperparameters).}
+  \label{fig:q-dyna-comparison}
+\end{figure}
+
+This graph shows all three methods converge to similar reward levels, but Q-learning and Dyna-Q show higher early variance, while SARSA remains more stable. Episode lengths decrease fastest for SARSA, reflecting its tendency to learn shorter, more direct trajectories. Dyna-Q exhibits greater fluctuation in both rewards and steps, consistent with planning amplifying noisy updates. The delivery plot shows that all algorithms quickly achieve reliable one-delivery episodes, indicating that differences lie mainly in training stability and efficiency rather than final task success.
 
 \paragraph{Greedy Evaluation.}  
 When evaluated without exploration ($\epsilon=0$), all three algorithms converged to highly similar deterministic policies: approximately 45 reward, 34--36 steps, and consistent delivery success. This indicates that algorithmic differences primarily affect learning dynamics rather than the quality of the converged policy.
