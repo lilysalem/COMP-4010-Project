@@ -15,6 +15,7 @@
 \usepackage{nicefrac}
 \usepackage{microtype}
 \usepackage{xcolor}
+\usepackage{float}
 
 % NeurIPS-style page layout
 \usepackage[letterpaper]{geometry}
@@ -135,7 +136,7 @@ The reward function returns integer rewards based on the action taken and its ou
 \centering
 \begin{tabular}{|l|c|}
 \hline
-\textbf{Action/Outcome} & \textbf{Reward} \\ \hline
+Action/Outcome & Reward \\ \hline
 Moving to a trail cell (T) or signal cell (S) & +1 \\ \hline
 Moving to an empty cell (E) & 0 \\ \hline
 Picking up food & +3 \\ \hline
@@ -180,7 +181,7 @@ For the experiment, we used a consistent training set up to ensure a fair compar
 \centering
 \begin{tabular}{lcccc}
 \hline
-Algorithm & Train avg reward (last 50) & Train avg steps & lr / $\gamma$ / $\epsilon$ / decay & Deliveries \\
+Algorithm & 50-ep. avg. return & Train avg steps & lr / $\gamma$ / $\epsilon$ / decay & Deliveries \\
 \hline
 Q-learning & 56.9 & 100.9 & 0.001 / 0.99 / 0.3 / 0.99 & 1.0 \\
 Dyna-Q (p5) & 49.0 & 137.9 & 0.01 / 0.99 / 0.5 / 0.995 & 0.99 \\
@@ -197,9 +198,9 @@ SARSA & 47.3 & 73.0 & 0.01 / 0.9 / 0.3 / 0.995 & 1.0 \\
 
 Overall, Q-learning achieved the highest average reward among all methods. The best configuration ($\alpha{=}0.001$, $\gamma{=}0.99$, $\epsilon{=}0.3$, $\text{decay}{=}0.99$) reached:
 \begin{itemize}
-  \item \textbf{\textasciitilde56.9 reward} (average over last 50 episodes)
-  \item \textbf{\textasciitilde101 steps} per episode
-  \item \textbf{Delivery success $\approx 1.0$} (meaning nearly all episodes achieved the goal once)
+  \item 56.9 reward (average over last 50 episodes)
+  \item \textasciitilde101 steps per episode
+  \item Delivery success $\approx 1.0$ (meaning nearly all episodes achieved the goal once)
 \end{itemize}
 
 These results demonstrate that off-policy bootstrapping is effective in this environment, where positive rewards (pickup $+3$, delivery $+10$) are sparse. As discussed in Section~2 (Approach), Q-learning's optimistic value backups allow it to propagate high rewards even from rare successful trajectories. However, these high-reward policies usually lead to longer episodes, indicating that Q-learning often selects longer but high-value paths.
@@ -210,13 +211,22 @@ SARSA is more stable because it focuses on the actual next action rather than th
  
 \subsection*{Dyna-Q}
 
-Dyna-Q was evaluated to determine whether planning through model replay provides measurable benefits given the ant's limited vision. Performance depended strongly on \textbf{planning depth}:
+Dyna-Q was evaluated to determine whether planning through model replay provides measurable benefits given the ant's limited vision. Performance depended strongly on planning depth:
 \begin{itemize}
-  \item Best \textbf{p5} configuration: \textasciitilde49.0 reward, \textasciitilde138 steps
-  \item Best \textbf{p3} configuration: \textasciitilde47.6 reward, \textasciitilde81 steps
+  \item Best p5 configuration: \textasciitilde49.0 reward, \textasciitilde138 steps
+  \item Best p3 configuration: \textasciitilde47.6 reward, \textasciitilde81 steps
 \end{itemize}
 
-Although higher planning improved reward in some cases, it frequently \textbf{increased episode length}, suggesting that replay amplified the effect of aggressive updates or high $\epsilon$. Dyna-Q therefore did not surpass Q-learning's peak reward, and it often balanced between Q-learning and SARSA in terms of reward and efficiency. This aligns with our expectation (Section~2) that model-based planning may be limited by the small state space and modest movement penalties.
+Although higher planning improved reward in some cases, it frequently increased episode length, suggesting that replay amplified the effect of aggressive updates or high $\epsilon$. Dyna-Q therefore did not surpass Q-learning's peak reward, and it often balanced between Q-learning and SARSA in terms of reward and efficiency. This aligns with our expectation (Section~2) that model-based planning may be limited by the small state space and modest movement penalties.
+
+\begin{center}
+  \includegraphics[width=0.8\linewidth]{../results/comparisons/training_results_comparison.png}
+
+  Figure 1: Training rewards and episode lengths comparing Q-learning, Dyna-Q and SARSA (with shared hyperparameters).
+  \label{fig:q-dyna-comparison}
+\end{center}
+
+This graph shows all three methods converge to a close reward level range, but Q-learning and Dyna-Q show slighly higher early variance, while SARSA remains more stable. Episode lengths decrease fastest for SARSA, reflecting its tendency to learn shorter, more direct trajectories. Dyna-Q exhibits greater fluctuation in both rewards and steps, consistent with planning amplifying noisy updates. The delivery plot shows that all algorithms quickly achieve reliable one-delivery episodes, indicating that in this simple environment, differences lie mainly in training stability and efficiency rather than final task success.
 
 \begin{figure}[h]
   \centering
@@ -250,11 +260,11 @@ In this paper, we introduced our custom reinforcement learning environment and a
 However, some intended features, testing, and stretch goals remain incomplete. Given more time, we would prioritize completing these stretch goals that we had set previously, including:
 
 \begin{itemize}
-    \item \textbf{Experimenting with the state space and state awareness of the agents} -- deliberately limiting the observation space of the agent was part of our experimental design. However, we also wanted to test the effects of increasing this observation space on the behavior of the agents using various algorithms.
+    \item Experimenting with the state space and state awareness of the agents - deliberately limiting the observation space of the agent was part of our experimental design. However, we also wanted to test the effects of increasing this observation space on the behavior of the agents using various algorithms.
     
-    \item \textbf{Multi-agent training} -- ants display a remarkable level of collective intelligence~\cite{morgan2009trail}. While we tested a single agent using predesignated pheromone trails, we had a grander vision of many agents collaborating in the environment in order to forage for resources.
+    \item Multi-agent training - ants display a remarkable level of collective intelligence~\cite{morgan2009trail}. While we tested a single agent using predesignated pheromone trails, we had a grander vision of many agents collaborating in the environment in order to forage for resources.
     
-    \item \textbf{Batch and offline training} -- in addition to the previous goal, we would also aim to do some batch or offline training, as agents would be able to appear and disappear within the course of an episode.
+    \item Batch and offline training - in addition to the previous goal, we would also aim to do some batch or offline training, as agents would be able to appear and disappear within the course of an episode.
 \end{itemize}
 
 In conclusion, our results from testing the reinforcement learning algorithm showed that a simulated ant-like agent can learn to act effectively in gathering resources in a complex gridworld environment using common RL techniques. It can even overcome constraints like an extremely limited observation space. This demonstrates that our project is a good proof-of-concept for a broader simulation system for ant simulation as it stands, and can yield even more significant observations and results given further development.
