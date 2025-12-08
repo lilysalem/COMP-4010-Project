@@ -106,14 +106,11 @@ When evaluated without exploration ($\epsilon=0$), all three algorithms converge
 
 \subsection{Analysis of Results}
 
-\paragraph{Hyperparameter Sensitivity.}  
-Learning rate had the strongest impact: Q-learning performed best with α=0.001, while α=0.01 destabilized updates, especially for Dyna-Q; SARSA handled larger α more reliably. Q-learning also favored moderate exploration (ε=0.3 with fast decay), whereas Dyna-Q sometimes benefited from higher ε=0.5 at the cost of longer episodes, and SARSA remained robust. A higher discount factor (γ=0.99) improved Q-learning’s reward, with more configuration-dependent effects for SARSA and Dyna-Q. Increasing planning depth improved Dyna-Q’s reward in limited cases but generally lengthened episodes, with p3 more stable than p5.
+Starting with hyperparameter sensitivity, learning rate had the strongest impact. Q-learning performed best with $\alpha{=}0.001$, while $\alpha{=}0.01$ destabilized updates, especially for Dyna-Q; SARSA handled larger $\alpha$ more reliably. Q-learning also favored moderate exploration ($\epsilon{=}0.3$ with fast decay), whereas Dyna-Q sometimes benefited from higher $\epsilon{=}0.5$ at the cost of longer episodes, and SARSA remained robust. A higher discount factor ($\gamma{=}0.99$) improved Q-learning’s reward, with more configuration-dependent effects for SARSA and Dyna-Q. Increasing planning depth improved Dyna-Q’s reward in limited cases but generally lengthened episodes, with p3 more stable than p5.
 
-\paragraph{Time and Space Considerations.}  
-Computationally, all methods have similar per-step cost except Dyna-Q, which adds an extra O(planning_steps) update. With planning_steps ∈ {3,5}, this overhead is small, but our results show no clear sample-efficiency gain to justify it. The environment’s simple state representation likely limits the benefit of deeper planning.
+Computationally, all methods have similar per-step cost except Dyna-Q, which adds an extra $O(\text{planning\_steps})$ update. With $\text{planning\_steps} \in \{3,5\}$, this overhead is small, but our results show no clear sample-efficiency gain to justify it. The environment’s simple state representation likely limits the benefit of deeper planning.
 
-\paragraph{Interpretation.}  
-These results indicate that, in this environment, reward structure and limited vision restrain the benefits of model-based planning. Q-learning excels in extracting reward from sparse high-value transitions, while SARSA remains the most step-efficient. Dyna-Q offers intermediate performance and could demonstrate clearer advantages in environments with higher penalties for wandering, richer sensory inputs, or more complex dynamics. 
+These results indicate that, in this environment, reward structure and limited vision restrain the benefits of model-based planning. Q-learning excels in extracting reward from sparse high-value transitions, while SARSA remains the most step-efficient. Dyna-Q offers intermediate performance and could demonstrate clearer advantages in environments with higher penalties for wandering, richer sensory inputs, or more complex dynamics.
 
 
 
