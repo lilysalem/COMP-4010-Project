@@ -222,18 +222,9 @@ Although higher planning improved reward in some cases, it frequently increased 
 \begin{center}
   \includegraphics[width=0.8\linewidth]{../results/comparisons/training_results_comparison.png}
 
-  Figure 1: Training rewards and episode lengths comparing Q-learning, Dyna-Q and SARSA (with shared hyperparameters).
+  \textbf{Figure 1:} Training rewards and episode lengths comparing Q-learning, Dyna-Q and SARSA (with shared hyperparameters).
   \label{fig:q-dyna-comparison}
 \end{center}
-
-This graph shows all three methods converge to a close reward level range, but Q-learning and Dyna-Q show slighly higher early variance, while SARSA remains more stable. Episode lengths decrease fastest for SARSA, reflecting its tendency to learn shorter, more direct trajectories. Dyna-Q exhibits greater fluctuation in both rewards and steps, consistent with planning amplifying noisy updates. The delivery plot shows that all algorithms quickly achieve reliable one-delivery episodes, indicating that in this simple environment, differences lie mainly in training stability and efficiency rather than final task success.
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.9\linewidth]{results/comparisons/training_results_comparison.png}
-  \caption{Training rewards and episode lengths comparing Q-learning, Dyna-Q and SARSA (with shared hyperparameters).}
-  \label{fig:q-dyna-comparison}
-\end{figure}
 
 This graph shows all three methods converge to a close reward level range, but Q-learning and Dyna-Q show slighly higher early variance, while SARSA remains more stable. Episode lengths decrease fastest for SARSA, reflecting its tendency to learn shorter, more direct trajectories. Dyna-Q exhibits greater fluctuation in both rewards and steps, consistent with planning amplifying noisy updates. The delivery plot shows that all algorithms quickly achieve reliable one-delivery episodes, indicating that in this simple environment, differences lie mainly in training stability and efficiency rather than final task success.
 
