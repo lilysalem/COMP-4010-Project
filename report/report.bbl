@@ -1,13 +1,41 @@
 \begin{thebibliography}{1}
 
-\bibitem{haber_inversion_2007}
-E.~Haber and D.~Oldenburg.
-\newblock Inversion of gravity and magnetic data for 3d crustal structure.
-\newblock {\em Geophysics}, 72(3):I33--I45, 2007.
+\bibitem{dorigo1996ant}
+Marco Dorigo, Vittorio Maniezzo, and Alberto Colorni.
+\newblock Ant system: Optimization by a colony of cooperating agents.
+\newblock {\em IEEE Transactions on Systems, Man, and Cybernetics, Part B
+  (Cybernetics)}, 26(1):1--13, 1996.
 
-\bibitem{hale_atomic_2001}
-B.~N. Hale.
-\newblock Atomic-scale coordination in liquid aluminum.
-\newblock {\em Physical Review B}, 63(18):184103, 2001.
+\bibitem{holzinger2018interactive}
+Andreas Holzinger, Markus Plass, Michael Kickmeier-Rust, Katharina Holzinger,
+  Gloria~Cerasela Cri{\c{s}}an, Camelia-Mihaela Pintea, and Vasile Palade.
+\newblock Interactive machine learning: Experimental evidence for the human in
+  the algorithmic loop.
+\newblock {\em Applied Intelligence}, 49:2401--2414, 2019.
+
+\bibitem{merloti2005simulation}
+Paulo~E. Merloti and Joseph Lewis.
+\newblock Simulation of artificial ant's behavior in a digital environment.
+\newblock In {\em Proceedings of the International Conference on Artificial
+  Intelligence}, 2005.
+
+\bibitem{morgan2009trail}
+E.~David Morgan.
+\newblock Trail pheromones of ants.
+\newblock {\em Physiological Entomology}, 34(1):1--17, 2009.
+
+\bibitem{recio2012antbot}
+Gustavo Recio, Emilio Martin, C{\'e}sar Estebanez, and Yago Saez.
+\newblock {AntBot}: Ant colonies for video games.
+\newblock {\em IEEE Transactions on Computational Intelligence and AI in
+  Games}, 4(4):295--308, 2012.
+
+\bibitem{takata2023evolving}
+Ryosuke Takata, Yujin Tang, Yingtao Tian, Norihiro Maruyama, Hiroki Kojima, and
+  Takashi Ikegami.
+\newblock Evolving collective {AI}: Simulation of ants communicating via
+  chemicals.
+\newblock In {\em Proceedings of the Artificial Life Conference}, volume~35,
+  page 112. MIT Press, 2023.
 
 \end{thebibliography}
